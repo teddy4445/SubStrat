@@ -21,9 +21,7 @@ We define a summary to be a "good" summary if it is both stable and optimize som
 <a name="data"/>
 
 ## Data 
-The project requires two data files:
-1. Query sessions dataset (as a **CSV** file) - a data set of users' queries in the following format:
-2. A dataset instance of the data the users' queries performed on (for the fitness evaluation of the genes). 
+ADD HERE LATER
 
 <a name="algorithm"/>
 
