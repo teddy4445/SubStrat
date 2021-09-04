@@ -1,4 +1,5 @@
 # library imports
+import json
 import collections
 import pandas as pd
 
@@ -7,7 +8,8 @@ def greedy_summary(dataset: pd.DataFrame,
                    desired_row_size: int,
                    desired_col_size: int,
                    row_score_function,
-                   is_return_indexes: bool = False):
+                   is_return_indexes: bool = False,
+                   save_converge_report: str = ""):
     """
 
     :param dataset:
@@ -15,10 +17,16 @@ def greedy_summary(dataset: pd.DataFrame,
     :param desired_col_size:
     :param row_score_function:
     :param is_return_indexes:
+    :param save_converge_report:
     :return:
     """
     # TODO: REMOVE LATER - JUST FOR DEBUG
     round_count = 1
+
+    # if requested, init empty converge report
+    if save_converge_report != "":
+        converge_report = {"rows": [],
+                           "cols": []}
 
     dataset_transposed = dataset.transpose()
     old_pick_rows = []
@@ -28,28 +36,52 @@ def greedy_summary(dataset: pd.DataFrame,
     # when no other swap is taken place, this is the equilibrium and we can stop searching
     while collections.Counter(old_pick_rows) != collections.Counter(pick_rows) \
             or collections.Counter(old_pick_columns) != collections.Counter(pick_columns):
-
         # TODO: REMOVE LATER - JUST FOR DEBUG
         print("greedy_summary: we are starting with round #{}".format(round_count))
-        round_count += 1
 
         old_pick_rows = pick_rows.copy()
         old_pick_columns = pick_columns.copy()
-        pick_rows = greedy_row_summary(dataset=dataset.iloc[:, pick_columns],
+        pick_rows = greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
                                        desired_row_size=desired_row_size,
                                        score_function=row_score_function,
                                        is_return_indexes=True)
-        pick_columns = greedy_row_summary(dataset=dataset_transposed.iloc[:, pick_rows],
+        # TODO: REMOVE LATER - JUST FOR DEBUG
+        print("\n{}\n".format("-"*100), end="")
+
+        pick_columns = greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
                                           desired_row_size=desired_col_size,
                                           score_function=row_score_function,
                                           is_return_indexes=True)
+        # just for easy review later
+        pick_rows = sorted(pick_rows)
+        pick_columns = sorted(pick_columns)
+
+        # if requested, add the data for the report
+        if save_converge_report != "":
+            converge_report["rows"].append(pick_rows)
+            converge_report["cols"].append(pick_columns)
 
         # TODO: REMOVE LATER - JUST FOR DEBUG
-        print("\n\n", end="")
+        print("\n\nRound #{}\nPick rows = {}\nPick columns = {}".format(round_count, pick_rows, pick_columns), end="\n")
+        round_count += 1
+    # TODO: REMOVE LATER - JUST FOR DEBUG
+    print("\n\n{}\nPick rows = {}\nPick columns = {}\n{}\n\n".format("-" * 100,
+                                                                     pick_rows,
+                                                                     pick_columns,
+                                                                     "-" * 100), end="")
+    # if requested, save the converge report
+    if save_converge_report != "":
+        json.dump(converge_report, open(save_converge_report, "w"), indent=2)
 
-    if is_return_indexes:
-        return pick_rows, pick_columns
-    return dataset.iloc[pick_rows, pick_columns]
+    # full return logic
+    if save_converge_report:
+        if is_return_indexes:
+            return pick_rows, pick_columns, converge_report
+        return dataset.iloc[pick_rows, pick_columns], converge_report
+    else:
+        if is_return_indexes:
+            return pick_rows, pick_columns
+        return dataset.iloc[pick_rows, pick_columns]
 
 
 def greedy_row_summary(dataset: pd.DataFrame,
