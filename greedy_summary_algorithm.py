@@ -1,5 +1,6 @@
 # library imports
 import json
+import random
 import collections
 import pandas as pd
 
@@ -8,16 +9,20 @@ def greedy_summary(dataset: pd.DataFrame,
                    desired_row_size: int,
                    desired_col_size: int,
                    row_score_function,
+                   prevent_loop: bool = True,
                    is_return_indexes: bool = False,
-                   save_converge_report: str = ""):
+                   save_converge_report: str = "",
+                   max_iter: int = -1):
     """
 
     :param dataset:
     :param desired_row_size:
     :param desired_col_size:
     :param row_score_function:
+    :param prevent_loop:
     :param is_return_indexes:
     :param save_converge_report:
+    :param max_iter:
     :return:
     """
     # TODO: REMOVE LATER - JUST FOR DEBUG
@@ -34,8 +39,7 @@ def greedy_summary(dataset: pd.DataFrame,
     pick_rows = list(range(dataset.shape[0]))  # all rows
     pick_columns = list(range(dataset.shape[1]))  # all columns
     # when no other swap is taken place, this is the equilibrium and we can stop searching
-    while collections.Counter(old_pick_rows) != collections.Counter(pick_rows) \
-            or collections.Counter(old_pick_columns) != collections.Counter(pick_columns):
+    while (round_count < max_iter or max_iter == -1) and (collections.Counter(old_pick_rows) != collections.Counter(pick_rows) or collections.Counter(old_pick_columns) != collections.Counter(pick_columns)):
         # TODO: REMOVE LATER - JUST FOR DEBUG
         print("greedy_summary: we are starting with round #{}".format(round_count))
 
@@ -63,7 +67,29 @@ def greedy_summary(dataset: pd.DataFrame,
 
         # TODO: REMOVE LATER - JUST FOR DEBUG
         print("\n\nRound #{}\nPick rows = {}\nPick columns = {}".format(round_count, pick_rows, pick_columns), end="\n")
+
+        # in order to prevent loops, we wish to add noise to the data
+        if prevent_loop and round_count >= 2:
+            for previous_step in range(round_count-1):
+                if pick_rows == converge_report["rows"][previous_step] and pick_columns == converge_report["cols"][previous_step]:
+                    # pick randomly new start
+                    pick_rows = []
+                    while len(pick_rows) < desired_row_size:
+                        new_value = random.choice(list(range(dataset.shape[0])))
+                        if new_value not in pick_rows:
+                            pick_rows.append(new_value)
+                    pick_columns = []
+                    while len(pick_rows) < desired_col_size:
+                        new_value = random.choice(list(range(dataset.shape[2])))
+                        if new_value not in pick_rows:
+                            pick_columns.append(new_value)
+                    # remember this changes
+                    converge_report["rows"].append(pick_rows)
+                    converge_report["cols"].append(pick_columns)
+                    break
+
         round_count += 1
+
     # TODO: REMOVE LATER - JUST FOR DEBUG
     print("\n\n{}\nPick rows = {}\nPick columns = {}\n{}\n\n".format("-" * 100,
                                                                      pick_rows,
