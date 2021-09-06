@@ -37,6 +37,7 @@ ADD HERE LATER
 - pandas               1.2.3
 - scikit-learn         0.24.1
 - seaborn              0.11.1
+- opencv-python        4.5.3
 - scipy                latest
 
 These can be found in the **requirements.txt** and easily installed using the "pip install requirements.txt" command in your terminal. 

@@ -18,6 +18,7 @@ class Main:
     FILE_TIME_FORMAT = "%m_%d_%Y__%H_%M_%S"
     SUMMARY_REPORT_FILE_PATH = os.path.join(os.path.dirname(__file__), "results", "greedy_converge_report_{}.json".format(datetime.now().strftime(FILE_TIME_FORMAT)))
     SUMMARY_REPORT_PLOT_FILE_PATH = os.path.join(os.path.dirname(__file__), "results", "greedy_converge_report_{}.png".format(datetime.now().strftime(FILE_TIME_FORMAT)))
+    PICKING_SUMMARY_VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), "results", "{}".format(datetime.now().strftime(FILE_TIME_FORMAT)))
 
     def __init__(self):
         pass
@@ -37,6 +38,7 @@ class Main:
                                                     desired_col_size=desired_col_size)
         Main.save_results(result_file_path=result_file_path,
                           summary=summary,
+                          data_shape=data.shape,
                           converge_report=converge_report)
 
     @staticmethod
@@ -65,19 +67,26 @@ class Main:
 
     @staticmethod
     def save_results(result_file_path: str,
+                     data_shape: tuple,
                      summary: pd.DataFrame,
                      converge_report: dict) -> None:
         # save the summary for a file
         summary.to_csv(result_file_path, index=False)
         # generate and save a process plot
         AnalysisConvergeProcess.iou_greedy_converge(rows_list=converge_report["rows"],
-                                                    col_list=converge_report["cols"],
+                                                    cols_list=converge_report["cols"],
                                                     save_path=Main.SUMMARY_REPORT_PLOT_FILE_PATH)
+        # make a summary video
+        AnalysisConvergeProcess.picking_summary_video(rows_list=converge_report["rows"],
+                                                      cols_list=converge_report["cols"],
+                                                      original_data_set_shape=data_shape,
+                                                      save_path_folder=Main.PICKING_SUMMARY_VIDEO_FOLDER,
+                                                      fps=4)
 
 
 if __name__ == '__main__':
     Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "data.csv"),
-             data_row_working_size=1000,
+             data_row_working_size=50,
              data_rows_name_to_delete=["id", "species", "genus"],
              desired_row_size=20,
              desired_col_size=20,
