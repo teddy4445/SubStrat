@@ -1,148 +1,168 @@
 # library imports
+import math
 import json
 import random
 import collections
+import numpy as np
 import pandas as pd
 
+# parallel computing task
+import concurrent.futures
 
-def greedy_summary(dataset: pd.DataFrame,
-                   desired_row_size: int,
-                   desired_col_size: int,
-                   row_score_function,
-                   prevent_loop: bool = True,
-                   is_return_indexes: bool = False,
-                   save_converge_report: str = "",
-                   max_iter: int = -1):
+
+class GreedySummary:
+    """
+    This class is a wrapper over the greedy summary algorithm
     """
 
-    :param dataset:
-    :param desired_row_size:
-    :param desired_col_size:
-    :param row_score_function:
-    :param prevent_loop:
-    :param is_return_indexes:
-    :param save_converge_report:
-    :param max_iter:
-    :return:
-    """
-    # TODO: REMOVE LATER - JUST FOR DEBUG
-    round_count = 1
+    def __init__(self):
+        pass
 
-    # if requested, init empty converge report
-    if save_converge_report != "":
+    @staticmethod
+    def greedy_summary(dataset: pd.DataFrame,
+                       desired_row_size: int,
+                       desired_col_size: int,
+                       row_score_function,
+                       save_converge_report: str = "",
+                       prevent_loop: bool = True,
+                       is_return_indexes: bool = False,
+                       max_iter: int = -1):
+        """
+        A row-columns greedy dataset summary algorithm
+        :param dataset: the dataset we work on (pandas' dataframe)
+        :param desired_row_size: the size of the summary as the number of rows (int)
+        :param desired_col_size: the size of the summary as the number of columns (int)
+        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe)
+                                   and give a score (float) to the summary
+        :param save_converge_report: a path to write the converge report to (default - do not write)
+        :param prevent_loop: boolean flag, to check if we have loops in arbitrary size in the process, and start prevention logic
+        :param is_return_indexes:  boolean flag to return summary's rows indexes of after applying to the dataset itself
+        :param max_iter: the maximum number of iteration we allow to do (default - unlimited)
+        :return: the summary of the dataset with converge report (dict)
+        """
+        # setting the round count to the beginning of the process
+        round_count = 1
+        # if requested, init empty converge report
         converge_report = {"rows": [],
-                           "cols": []}
+                           "cols": [],
+                           "rows_score": [],
+                           "cols_score": [],
+                           "total_score": []}
+        # init all the vars we need in the process
+        old_pick_rows = []
+        old_pick_columns = []
+        pick_rows = list(range(dataset.shape[0]))  # all rows
+        pick_columns = list(range(dataset.shape[1]))  # all columns
+        # calc once the transpose of the dataset (matrix) for the second step in each iteration
+        dataset_transposed = dataset.transpose()
 
-    dataset_transposed = dataset.transpose()
-    old_pick_rows = []
-    old_pick_columns = []
-    pick_rows = list(range(dataset.shape[0]))  # all rows
-    pick_columns = list(range(dataset.shape[1]))  # all columns
-    # when no other swap is taken place, this is the equilibrium and we can stop searching
-    while (round_count < max_iter or max_iter == -1) and (collections.Counter(old_pick_rows) != collections.Counter(pick_rows) or collections.Counter(old_pick_columns) != collections.Counter(pick_columns)):
-        # TODO: REMOVE LATER - JUST FOR DEBUG
-        print("greedy_summary: we are starting with round #{}".format(round_count))
+        # when no other swap is taken place, this is the equilibrium and we can stop searching
+        # Note: we introduce the "max_iter" stop condition in order stop the run after enough steps
+        while (round_count < max_iter or max_iter == -1) and (collections.Counter(old_pick_rows) != collections.Counter(pick_rows) or collections.Counter(old_pick_columns) != collections.Counter(pick_columns)):
+            # recall last step's rows and columns indexes
+            old_pick_rows = pick_rows.copy()
+            old_pick_columns = pick_columns.copy()
 
-        old_pick_rows = pick_rows.copy()
-        old_pick_columns = pick_columns.copy()
-        pick_rows = greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
-                                       desired_row_size=desired_row_size,
-                                       score_function=row_score_function,
-                                       is_return_indexes=True)
-        # TODO: REMOVE LATER - JUST FOR DEBUG
-        print("\n{}\n".format("-"*100), end="")
+            # optimize over the rows
+            pick_rows, rows_score = GreedySummary._greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
+                                                                      desired_row_size=desired_row_size,
+                                                                      score_function=row_score_function,
+                                                                      is_return_indexes=True)
 
-        pick_columns = greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
-                                          desired_row_size=desired_col_size,
-                                          score_function=row_score_function,
-                                          is_return_indexes=True)
-        # just for easy review later
-        pick_rows = sorted(pick_rows)
-        pick_columns = sorted(pick_columns)
+            # optimize over the columns
+            pick_columns, cols_score = GreedySummary._greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
+                                                                         desired_row_size=desired_col_size,
+                                                                         score_function=row_score_function,
+                                                                         is_return_indexes=True)
 
-        # if requested, add the data for the report
-        if save_converge_report != "":
+            # sort the indexes - just for easy review later
+            pick_rows = sorted(pick_rows)
+            pick_columns = sorted(pick_columns)
+
+            # Add the data for the report
             converge_report["rows"].append(pick_rows)
             converge_report["cols"].append(pick_columns)
+            converge_report["rows_score"].append(rows_score)
+            converge_report["cols_score"].append(cols_score)
+            converge_report["total_score"].append(row_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
 
-        # TODO: REMOVE LATER - JUST FOR DEBUG
-        print("\n\nRound #{}\nPick rows = {}\nPick columns = {}".format(round_count, pick_rows, pick_columns), end="\n")
+            # in order to prevent loops, once found, we want to jump to other, random start condition
+            if prevent_loop and round_count >= 2:
+                for previous_step in range(round_count - 1):
+                    if pick_rows == converge_report["rows"][previous_step] and pick_columns == converge_report["cols"][previous_step]:
+                        # pick randomly new start
+                        pick_rows = []
+                        while len(pick_rows) < desired_row_size:
+                            new_value = random.choice(list(range(dataset.shape[0])))
+                            if new_value not in pick_rows:
+                                pick_rows.append(new_value)
+                        pick_columns = []
+                        while len(pick_rows) < desired_col_size:
+                            new_value = random.choice(list(range(dataset.shape[2])))
+                            if new_value not in pick_rows:
+                                pick_columns.append(new_value)
+                        # add these changes in the converge report
+                        converge_report["rows"].append(pick_rows)
+                        converge_report["cols"].append(pick_columns)
+                        converge_report["rows_score"].append(0)
+                        converge_report["cols_score"].append(0)
+                        break
 
-        # in order to prevent loops, we wish to add noise to the data
-        if prevent_loop and round_count >= 2:
-            for previous_step in range(round_count-1):
-                if pick_rows == converge_report["rows"][previous_step] and pick_columns == converge_report["cols"][previous_step]:
-                    # pick randomly new start
-                    pick_rows = []
-                    while len(pick_rows) < desired_row_size:
-                        new_value = random.choice(list(range(dataset.shape[0])))
-                        if new_value not in pick_rows:
-                            pick_rows.append(new_value)
-                    pick_columns = []
-                    while len(pick_rows) < desired_col_size:
-                        new_value = random.choice(list(range(dataset.shape[2])))
-                        if new_value not in pick_rows:
-                            pick_columns.append(new_value)
-                    # remember this changes
-                    converge_report["rows"].append(pick_rows)
-                    converge_report["cols"].append(pick_columns)
-                    break
+            # count this step
+            round_count += 1
 
-        round_count += 1
+        # if requested, save the converge report
+        if save_converge_report != "":
+            json.dump(converge_report, open(save_converge_report, "w"), indent=2)
 
-    # TODO: REMOVE LATER - JUST FOR DEBUG
-    print("\n\n{}\nPick rows = {}\nPick columns = {}\n{}\n\n".format("-" * 100,
-                                                                     pick_rows,
-                                                                     pick_columns,
-                                                                     "-" * 100), end="")
-    # if requested, save the converge report
-    if save_converge_report != "":
-        json.dump(converge_report, open(save_converge_report, "w"), indent=2)
-
-    # full return logic
-    if save_converge_report:
+        # full return logic
         if is_return_indexes:
             return pick_rows, pick_columns, converge_report
         return dataset.iloc[pick_rows, pick_columns], converge_report
-    else:
+
+    @staticmethod
+    def _greedy_row_summary(dataset: pd.DataFrame,
+                            desired_row_size: int,
+                            score_function,
+                            is_return_indexes: bool = False):
+        """
+        The greedy algorithm for only the rows (columns when transposed matrix)
+        :param dataset: the dataset we work on (pandas' dataframe)
+        :param desired_row_size: the size of the summary as the number of rows (int)
+        :param score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe)
+                                and give a score (float) to the summary
+        :param is_return_indexes: boolean flag to return summary's rows indexes of after applying to the dataset itself
+        :return: summary and converge report mean score (over all the rows)
+        """
+        # find all the rows indexes
+        all_rows_indexes = set(list(range(dataset.shape[0])))
+        # init vars
+        sample_rows_indexes = []
+        best_scores = []
+        # run until we have the desired number of rows in the summary
+        for i in range(desired_row_size):
+            # init to max to replace in the first time
+            best_new_row_index = -1
+            best_new_row_score = float("inf")
+            # get only the relevant rows
+            search_rows_indexes = all_rows_indexes - set(sample_rows_indexes)
+            # run over all relevant rows and calc the score
+            for check_row_index in search_rows_indexes:
+                check_summary = sample_rows_indexes.copy()
+                check_summary.append(check_row_index)
+                check_summary_score = score_function(dataset=dataset,
+                                                     summary=dataset.iloc[check_summary, :])
+                # if better score, we want this row to add
+                if check_summary_score < best_new_row_score:
+                    best_new_row_score = check_summary_score
+                    best_new_row_index = check_row_index
+            # add the best row to the summary and recall the best score for the converge report later
+            sample_rows_indexes.append(best_new_row_index)
+            best_scores.append(best_new_row_score)
+
+        # return answers
+        final_summary = dataset.iloc[sample_rows_indexes, :]
+        summary_score = score_function(dataset, final_summary)
         if is_return_indexes:
-            return pick_rows, pick_columns
-        return dataset.iloc[pick_rows, pick_columns]
-
-
-def greedy_row_summary(dataset: pd.DataFrame,
-                       desired_row_size: int,
-                       score_function,
-                       is_return_indexes: bool = False):
-    """
-
-    :param dataset:
-    :param desired_row_size:
-    :param score_function:
-    :param is_return_indexes:
-    :return:
-    """
-    all_rows_indexes = set(list(range(dataset.shape[0])))
-    sample_rows_indexes = []
-    for i in range(desired_row_size):
-        best_new_row_index = -1
-        best_new_row_score = float("inf")
-        search_rows_indexes = all_rows_indexes - set(sample_rows_indexes)
-        for check_row_index in search_rows_indexes:
-            check_summary = sample_rows_indexes.copy()
-            check_summary.append(check_row_index)
-            check_summary_score = score_function(dataset=dataset,
-                                                 summary=dataset.iloc[check_summary, :])
-            if check_summary_score < best_new_row_score:
-                best_new_row_score = check_summary_score
-                best_new_row_index = check_row_index
-        sample_rows_indexes.append(best_new_row_index)
-
-        # TODO: REMOVE LATER - JUST FOR DEBUG
-        print("greedy_row_summary: we have {}/{} ({:.2f}%) of the summary we need for dataset size = {}".format(i,
-                                                                                                                desired_row_size,
-                                                                                                                i / desired_row_size * 100,
-                                                                                                                dataset.shape))
-    if is_return_indexes:
-        return sample_rows_indexes
-    return dataset.iloc[sample_rows_indexes, :]
+            return sample_rows_indexes, summary_score
+        return final_summary, summary_score

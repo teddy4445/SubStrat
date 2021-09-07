@@ -7,7 +7,7 @@ import numpy
 
 class MovieFromImages:
     """
-    make video from images
+    This class responsible for making videos from sequences of images
     """
 
     def __init__(self):

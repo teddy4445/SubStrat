@@ -1,5 +1,6 @@
 # library imports
 import os
+import math
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -21,7 +22,7 @@ class AnalysisConvergeProcess:
     @staticmethod
     def _iou(set_a: set,
              set_b: set) -> float:
-        return 1 - len(set_a.intersection(set_b))/len(set_a.union(set_b))
+        return 1 - len(set_a.intersection(set_b)) / len(set_a.union(set_b))
 
     # END - HELP #
 
@@ -37,25 +38,67 @@ class AnalysisConvergeProcess:
         :return: save plot
         """
         x_values = [AnalysisConvergeProcess._iou(set_a=set(rows_list[row_index]),
-                                                 set_b=set(rows_list[row_index+1]))
-                    for row_index in range(len(rows_list)-1)]
+                                                 set_b=set(rows_list[row_index + 1]))
+                    for row_index in range(len(rows_list) - 1)]
         y_values = [AnalysisConvergeProcess._iou(set_a=set(cols_list[col_index]),
-                                                 set_b=set(cols_list[col_index+1]))
-                    for col_index in range(len(cols_list)-1)]
+                                                 set_b=set(cols_list[col_index + 1]))
+                    for col_index in range(len(cols_list) - 1)]
         plt.scatter(x_values,
                     y_values,
                     s=20,
                     marker='o',
                     c="black")
         for i, txt in enumerate(list(range(len(x_values)))):
-            plt.annotate("{}->{}".format(i+1, i+2), (x_values[i] + 0.01, y_values[i] + 0.01))
+            plt.annotate("{}->{}".format(i + 1, i + 2), (x_values[i] + 0.01, y_values[i] + 0.01))
         plt.xlim((-0.05, 1.05))
         plt.ylim((-0.05, 1.05))
-        plt.xticks([i/10 for i in range(11)], [i/10 for i in range(11)])
-        plt.yticks([i/10 for i in range(11)], [i/10 for i in range(11)])
+        plt.xticks([i / 10 for i in range(11)], [i / 10 for i in range(11)])
+        plt.yticks([i / 10 for i in range(11)], [i / 10 for i in range(11)])
         plt.grid(alpha=0.3)
         plt.xlabel("IOU between any two summary row's indexes [1]")
         plt.ylabel("IOU between any two summary column's indexes [1]")
+        plt.savefig(save_path)
+        plt.close()
+
+    @staticmethod
+    def greedy_converge_scores(rows_scores: list,
+                               cols_scores: list,
+                               total_scores: list,
+                               save_path: str):
+        """
+        Plot a scatter plot of the changes in the summary rows and cols with the IOU metric over the process
+        :param rows_scores: list of scores from the algorithms converge process for the rows
+        :param cols_scores: list of scores from the algorithms converge process for the cols
+        :param cols_scores: list of scores from the algorithms converge process for the rows and columns
+        :param save_path: a path to save the plot in
+        :return: save plot
+        """
+        rows_scores.append(0)
+        cols_scores.append(0)
+        x = list(range(len(rows_scores)))
+        plt.plot(x,
+                 total_scores,
+                 "-p",
+                 color="black",
+                 alpha=0.8,
+                 label="Optimization score")
+        plt.plot(x,
+                 rows_scores,
+                 "-o",
+                 color="black",
+                 alpha=0.5,
+                 label="Row optimization score")
+        plt.plot(x,
+                 cols_scores,
+                 "-^",
+                 color="black",
+                 alpha=0.5,
+                 label="Column optimization score")
+        plt.xlim((0, len(x)))
+        plt.grid(axis="y", alpha=0.3)
+        plt.legend()
+        plt.xlabel("Algorithmic step [1]")
+        plt.ylabel("Greedy algorithm's scoring function's score [1]")
         plt.savefig(save_path)
         plt.close()
 
@@ -96,7 +139,7 @@ class AnalysisConvergeProcess:
             plt.yticks()
             plt.xlabel("")
             plt.ylabel("")
-            plt.savefig(os.path.join(save_path_folder, "image_{}.png".format(step+1)))
+            plt.savefig(os.path.join(save_path_folder, "image_{}.png".format(step + 1)))
             plt.close()
         # make video from the photos
         MovieFromImages.create(source_folder=save_path_folder,

@@ -3,11 +3,18 @@
 In this project, we obtain a "good" summary of a dataset based on the approach of stable feature selection.
 We define a summary to be a "good" summary if it is both stable and optimize some condition we would like to preserve in a dataset.
 
+The project aims to answer an instance of the following general task:
+Given a matrix (D := (R, C)) and a fitness function (F) such that D has |R| = M rows and |C| = N columns, 
+and F: D -> |R. In addition, given 0 < m << M and 0 < n << N, the sizes of the subsets of the rows and columns of the original matrix. 
+We wish to find subsets in sizes (m, n) such that:
+S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of the matrix D.
+
 ### Table of Contents
 1. [Usage](#usage)
 2. [Data](#data)
 3. [Algorithm](#algorithm)
-4. [dependencies](#dependancies)
+4. [Files structure](#files)
+5. [Dependencies](#dependancies)
 
 <a name="usage"/>
 
@@ -26,7 +33,19 @@ ADD HERE LATER
 <a name="algorithm"/>
 
 ## Algorithm 
-ADD HERE LATER 
+### Greedy algorithm
+
+
+
+<a name="files"/>
+
+## Files Structure
+- **main.py**: Manage the running of the simulation with analysis of results for the paper and IO operations. This is used as a first attempt on the algorithm.
+- **summary_score_functions.py**: A static class with methods for scoring dataset's summary.
+- **movie_from_images_maker.py**: This class responsible for making videos from sequences of images.
+- **greedy_summary_algorithm.py**: This class is a wrapper over the greedy summary algorithm.
+- **analysis_converge_process.py**: This class analyze and plot the converge process of a summary algorithm.
+- **multi_score_multi_ds_expriment.py**: This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes.
 
 <a name="dependancies"/>
 
