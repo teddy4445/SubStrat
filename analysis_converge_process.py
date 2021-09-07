@@ -73,23 +73,21 @@ class AnalysisConvergeProcess:
         :param save_path: a path to save the plot in
         :return: save plot
         """
-        rows_scores.append(0)
-        cols_scores.append(0)
-        x = list(range(len(rows_scores)))
+        x = list(range(min([len(total_scores), len(rows_scores), len(cols_scores)])))
         plt.plot(x,
-                 total_scores,
+                 total_scores[:len(x)],
                  "-p",
                  color="black",
                  alpha=0.8,
                  label="Optimization score")
         plt.plot(x,
-                 rows_scores,
+                 rows_scores[:len(x)],
                  "-o",
                  color="black",
                  alpha=0.5,
                  label="Row optimization score")
         plt.plot(x,
-                 cols_scores,
+                 cols_scores[:len(x)],
                  "-^",
                  color="black",
                  alpha=0.5,
@@ -101,6 +99,54 @@ class AnalysisConvergeProcess:
         plt.ylabel("Greedy algorithm's scoring function's score [1]")
         plt.savefig(save_path)
         plt.close()
+
+    @staticmethod
+    def greedy_converge_times(rows_compute_time: list,
+                              cols_compute_time: list,
+                              save_path: str,
+                              save_cumsum: bool = True):
+        """
+        Plot a scatter plot of the changes in the summary rows and cols with the IOU metric over the process
+        :param rows_compute_time: list of commuting time in second from the algorithms converge process for the rows
+        :param cols_compute_time: list of commuting time in second from the algorithms converge process for the columns
+        :param save_cumsum: save the same version but with cumsum
+        :param save_path: a path to save the plot in
+        :return: save plot
+        """
+        # time per step
+        x = list(range(min([len(rows_compute_time), len(cols_compute_time)])))
+        plt.plot(x,
+                 [cols_compute_time[step] + rows_compute_time[step] for step in range(len(x))],
+                 "-0",
+                 color="black",
+                 alpha=0.8,
+                 label="Iteration")
+        plt.plot(x,
+                 rows_compute_time[:len(x)],
+                 "-p",
+                 color="black",
+                 alpha=0.5,
+                 label="Rows")
+        plt.plot(x,
+                 cols_compute_time[:len(x)],
+                 "-^",
+                 color="black",
+                 alpha=0.5,
+                 label="Columns")
+        plt.xlim((0, len(x)))
+        plt.grid(axis="y", alpha=0.3)
+        plt.legend()
+        plt.xlabel("Algorithmic step [1]")
+        plt.ylabel("Computing time in seconds [1]")
+        plt.savefig(save_path)
+        plt.close()
+
+        # collective time over algorithms, if requested
+        if save_cumsum:
+            return AnalysisConvergeProcess.greedy_converge_times(rows_compute_time=np.cumsum(rows_compute_time),
+                                                                 cols_compute_time=np.cumsum(cols_compute_time),
+                                                                 save_cumsum=False,
+                                                                 save_path=save_path.replace(".png", "_cumsum.png"))
 
     @staticmethod
     def picking_summary_video(rows_list: list,

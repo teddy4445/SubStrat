@@ -1,6 +1,7 @@
 # library imports
 import math
 import json
+import time
 import random
 import collections
 import numpy as np
@@ -19,21 +20,22 @@ class GreedySummary:
         pass
 
     @staticmethod
-    def greedy_summary(dataset: pd.DataFrame,
-                       desired_row_size: int,
-                       desired_col_size: int,
-                       row_score_function,
-                       save_converge_report: str = "",
-                       prevent_loop: bool = True,
-                       is_return_indexes: bool = False,
-                       max_iter: int = -1):
+    def run(dataset: pd.DataFrame,
+            desired_row_size: int,
+            desired_col_size: int,
+            row_score_function,
+            evaluate_score_function,
+            save_converge_report: str = "",
+            prevent_loop: bool = True,
+            is_return_indexes: bool = False,
+            max_iter: int = -1):
         """
         A row-columns greedy dataset summary algorithm
         :param dataset: the dataset we work on (pandas' dataframe)
         :param desired_row_size: the size of the summary as the number of rows (int)
         :param desired_col_size: the size of the summary as the number of columns (int)
-        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe)
-                                   and give a score (float) to the summary
+        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
+        :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
         :param prevent_loop: boolean flag, to check if we have loops in arbitrary size in the process, and start prevention logic
         :param is_return_indexes:  boolean flag to return summary's rows indexes of after applying to the dataset itself
@@ -47,6 +49,8 @@ class GreedySummary:
                            "cols": [],
                            "rows_score": [],
                            "cols_score": [],
+                           "rows_calc_time": [],
+                           "cols_calc_time": [],
                            "total_score": []}
         # init all the vars we need in the process
         old_pick_rows = []
@@ -64,16 +68,20 @@ class GreedySummary:
             old_pick_columns = pick_columns.copy()
 
             # optimize over the rows
+            start_rows_calc = time.time()  # just for time measurement tasks
             pick_rows, rows_score = GreedySummary._greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
                                                                       desired_row_size=desired_row_size,
                                                                       score_function=row_score_function,
                                                                       is_return_indexes=True)
+            end_rows_calc = time.time()  # just for time measurement tasks
 
             # optimize over the columns
+            start_cols_calc = time.time()  # just for time measurement tasks
             pick_columns, cols_score = GreedySummary._greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
                                                                          desired_row_size=desired_col_size,
                                                                          score_function=row_score_function,
                                                                          is_return_indexes=True)
+            end_cols_calc = time.time()  # just for time measurement tasks
 
             # sort the indexes - just for easy review later
             pick_rows = sorted(pick_rows)
@@ -84,7 +92,9 @@ class GreedySummary:
             converge_report["cols"].append(pick_columns)
             converge_report["rows_score"].append(rows_score)
             converge_report["cols_score"].append(cols_score)
-            converge_report["total_score"].append(row_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
+            converge_report["rows_calc_time"].append((end_rows_calc - start_rows_calc))
+            converge_report["cols_calc_time"].append((end_cols_calc - start_cols_calc))
+            converge_report["total_score"].append(evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
 
             # in order to prevent loops, once found, we want to jump to other, random start condition
             if prevent_loop and round_count >= 2:
@@ -101,11 +111,19 @@ class GreedySummary:
                             new_value = random.choice(list(range(dataset.shape[2])))
                             if new_value not in pick_rows:
                                 pick_columns.append(new_value)
+
+                        # sort just for easier review later
+                        pick_rows = sorted(pick_rows)
+                        pick_columns = sorted(pick_columns)
+
                         # add these changes in the converge report
                         converge_report["rows"].append(pick_rows)
                         converge_report["cols"].append(pick_columns)
-                        converge_report["rows_score"].append(0)
-                        converge_report["cols_score"].append(0)
+                        converge_report["rows_calc_time"].append(0)  # TODO: maybe can be done better - later
+                        converge_report["cols_calc_time"].append(0)  # TODO: maybe can be done better - later
+                        converge_report["rows_score"].append(row_score_function(dataset, dataset.iloc[pick_rows, :]))
+                        converge_report["cols_score"].append(row_score_function(dataset_transposed, dataset_transposed.iloc[pick_columns, :]))
+                        converge_report["total_score"].append(evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
                         break
 
             # count this step

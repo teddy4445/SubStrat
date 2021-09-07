@@ -34,18 +34,21 @@ ADD HERE LATER
 
 ## Algorithm 
 ### Greedy algorithm
-
-
+One can treat the dataset summary task as a double feature selection (FS) problem.
+Namely, selecting (n) out of (N) features from (D) and (m) out of (M) features from (D.transpose()), respectively. 
+Assuming unknown connection between the rows and columns of matrix (D), we can run a greedy algorithm on the each of of them in a turn.
+Using the best result from the last iteration, in the following. This way, receiving an (local) optimal result. 
 
 <a name="files"/>
 
 ## Files Structure
 - **main.py**: Manage the running of the simulation with analysis of results for the paper and IO operations. This is used as a first attempt on the algorithm.
-- **summary_score_functions.py**: A static class with methods for scoring dataset's summary.
+- **summary_process_score_functions.py**: A static class with methods for scoring dataset's summary.
 - **movie_from_images_maker.py**: This class responsible for making videos from sequences of images.
 - **greedy_summary_algorithm.py**: This class is a wrapper over the greedy summary algorithm.
 - **analysis_converge_process.py**: This class analyze and plot the converge process of a summary algorithm.
-- **multi_score_multi_ds_expriment.py**: This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes.
+- **summary_wellness_scores.py**: A static class with methods for evaluating the wellness of a summary.
+- **multi_score_multi_ds_experiment.py**: This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes.
 
 <a name="dependancies"/>
 

@@ -5,9 +5,10 @@ import pandas as pd
 from datetime import datetime
 
 # project imports
-from greedy_summary_algorithm import greedy_summary
-from summary_score_functions import SummaryScoreFunctions
+from greedy_summary_algorithm import GreedySummary
+from summary_wellness_scores import SummaryWellnessScores
 from analysis_converge_process import AnalysisConvergeProcess
+from summary_process_score_functions import SummaryProcessScoreFunctions
 
 
 class Main:
@@ -27,6 +28,9 @@ class Main:
                                                      datetime.now().strftime(FILE_TIME_FORMAT)))
     SUMMARY_REPORT_SCORE_PLOT_FILE_PATH = os.path.join(os.path.dirname(__file__), RESULTS_FOLDER_NAME,
                                                        "greedy_scores_converge_report_{}.png".format(
+                                                           datetime.now().strftime(FILE_TIME_FORMAT)))
+    SUMMARY_REPORT_TIMES_PLOT_FILE_PATH = os.path.join(os.path.dirname(__file__), RESULTS_FOLDER_NAME,
+                                                       "greedy_times_converge_report_{}.png".format(
                                                            datetime.now().strftime(FILE_TIME_FORMAT)))
     PICKING_SUMMARY_VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), RESULTS_FOLDER_NAME,
                                                 "{}".format(datetime.now().strftime(FILE_TIME_FORMAT)))
@@ -89,6 +93,9 @@ class Main:
                                                                     datetime.now().strftime(Main.FILE_TIME_FORMAT)))
         Main.PICKING_SUMMARY_VIDEO_FOLDER = os.path.join(os.path.dirname(__file__), Main.RESULTS_FOLDER_NAME,
                                                          "{}".format(datetime.now().strftime(Main.FILE_TIME_FORMAT)))
+        Main.SUMMARY_REPORT_TIMES_PLOT_FILE_PATH = os.path.join(os.path.dirname(__file__), Main.RESULTS_FOLDER_NAME,
+                                                                "greedy_times_converge_report_{}.png".format(
+                                                                    datetime.now().strftime(Main.FILE_TIME_FORMAT)))
 
     @staticmethod
     def _read_data(data_file_path: str,
@@ -120,13 +127,14 @@ class Main:
         :param desired_col_size: the number of columns we want in the summary
         :return: the summary (pandas' dataframe) and the converge process (dict)
         """
-        return greedy_summary(dataset=data,
-                              desired_row_size=desired_row_size,
-                              desired_col_size=desired_col_size,
-                              row_score_function=SummaryScoreFunctions.row_entropy,
-                              is_return_indexes=False,
-                              save_converge_report=Main.SUMMARY_REPORT_FILE_PATH,
-                              max_iter=30)
+        return GreedySummary.run(dataset=data,
+                                 desired_row_size=desired_row_size,
+                                 desired_col_size=desired_col_size,
+                                 row_score_function=SummaryProcessScoreFunctions.row_entropy,
+                                 evaluate_score_function=SummaryWellnessScores.mean_entropy,
+                                 is_return_indexes=False,
+                                 save_converge_report=Main.SUMMARY_REPORT_FILE_PATH,
+                                 max_iter=30)
 
     @staticmethod
     def save_results(result_file_path: str,
@@ -147,11 +155,15 @@ class Main:
         AnalysisConvergeProcess.iou_greedy_converge(rows_list=converge_report["rows"],
                                                     cols_list=converge_report["cols"],
                                                     save_path=Main.SUMMARY_REPORT_PLOT_FILE_PATH)
-        # generate and save a score of the metric over iteration plot
+        # generate and save a score of the metric over iterations plot
         AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
                                                        cols_scores=converge_report["cols_score"],
                                                        total_scores=converge_report["total_score"],
                                                        save_path=Main.SUMMARY_REPORT_SCORE_PLOT_FILE_PATH)
+        # generate and save a time of compute over iterations plot
+        AnalysisConvergeProcess.greedy_converge_times(rows_compute_time=converge_report["rows_calc_time"],
+                                                      cols_compute_time=converge_report["cols_calc_time"],
+                                                      save_path=Main.SUMMARY_REPORT_TIMES_PLOT_FILE_PATH)
         # make a summary video
         AnalysisConvergeProcess.picking_summary_video(rows_list=converge_report["rows"],
                                                       cols_list=converge_report["cols"],
@@ -161,7 +173,8 @@ class Main:
 
 
 if __name__ == '__main__':
-    for size in [50, 200, 1000, 2000]:
+    for size in [30, 50, 200, 1000, 2000]:
+        print("Starting to work on size: {}".format(size))
         Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "data.csv"),
                  data_row_working_size=size,
                  data_rows_name_to_delete=["id", "species", "genus"],
