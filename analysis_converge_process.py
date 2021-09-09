@@ -2,6 +2,7 @@
 import os
 import math
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -25,6 +26,18 @@ class AnalysisConvergeProcess:
         return 1 - len(set_a.intersection(set_b)) / len(set_a.union(set_b))
 
     # END - HELP #
+
+    @staticmethod
+    def heatmap(df: pd.DataFrame,
+                save_path: str) -> None:
+        """
+        Print a heatmap of the dataframe and save in the requested path
+        """
+        sns.heatmap(df, cmap="coolwarm")
+        plt.xticks(list(range(df.shape[1])), list(df))
+        plt.yticks(list(range(df.shape[0])), list(df.index))
+        plt.savefig(save_path)
+        plt.close()
 
     @staticmethod
     def iou_greedy_converge(rows_list: list,

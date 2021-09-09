@@ -3,7 +3,9 @@ import os
 import numpy as np
 import pandas as pd
 from glob import glob
+import seaborn as sns
 from datetime import datetime
+from pandas.core.dtypes.common import is_numeric_dtype
 
 # project imports
 from table import Table
@@ -61,6 +63,8 @@ class MultiScoreMultiDatasetExperiment:
             for metric_name, score_metric_function in score_metrics.items():
                 # run over all the datasets
                 for dataset_name, dataset in datasets.items():
+                    # alert the user
+                    print("Working on dataset '{}' with metric '{}'".format(dataset_name, metric_name))
                     # run the summary and obtain result and coverage report
                     summary, converge_report = GreedySummary.run(dataset=dataset,
                                                                  desired_row_size=desired_row_size,
@@ -79,13 +83,38 @@ class MultiScoreMultiDatasetExperiment:
                     # save results into a table
                     df_table_scores.add(column=metric_name,
                                         row_id=dataset_name,
-                                        data_point=converge_report.g)
-            # TODO : save the table into a csv file
-            # TODO : covert the table into a heatmap and save as an image
+                                        data_point=converge_report.final_total_score())
+                    df_table_step_compute.add(column=metric_name,
+                                              row_id=dataset_name,
+                                              data_point=converge_report.steps_count())
+                    df_table_process_time.add(column=metric_name,
+                                              row_id=dataset_name,
+                                              data_point=converge_report.compute_time())
+            # convert tables into dataframes
+            dfs = {name: table.to_dataframe() for name, table in {"scores": df_table_scores,
+                                                                  "process_time": df_table_process_time,
+                                                                  "step_compute": df_table_step_compute}.items()}
+            # save the tables into a CSVs files
+            [df.to_csv(path_or_buf=os.path.join(main_save_folder_path, "{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name)))
+             for df_name, df in dfs]
+            # covert the table into a heatmap and save as an image
+            [AnalysisConvergeProcess.heatmap(df=df,
+                                             save_path=os.path.join(main_save_folder_path, "heatmap_{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name)))
+             for df_name, df in dfs]
+
+
+def prepare_dataset(df):
+    # remove what we do not need
+    df.drop([col for col in list(df) if not is_numeric_dtype(df[col])], axis=1, inplace=True)
+    # remove rows with nan
+    df.dropna(inplace=True)
+    # get only max number of rows to work with
+    return df.iloc[:200, :]
 
 
 def run_test():
-    datasets = {os.path.basename(path): pd.read_csv(path)
+    # load and prepare datasets
+    datasets = {os.path.basename(path): prepare_dataset(pd.read_csv(path))
                 for path in glob(os.path.join(os.path.dirname(__file__), "data", "*.csv"))}
 
     MultiScoreMultiDatasetExperiment.run(datasets=datasets,
@@ -95,7 +124,7 @@ def run_test():
                                              "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
                                              "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr
                                          },
-                                         summaries_sizes=[(10, 10), (20, 10), (10, 20), (20, 20)],
+                                         summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
                                          evaluation_metric=SummaryWellnessScores.mean_entropy,
                                          main_save_folder_path=os.path.join(os.path.dirname(__file__), "results"),
                                          max_iter=30)

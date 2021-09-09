@@ -28,7 +28,14 @@ S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of 
 <a name="data"/>
 
 ## Data 
-ADD HERE LATER
+At the current state, we are using five datasets that can be found in the "/data" folder:
+- **dataset_1_birds_sings.csv**: birds singing dataset from Kaggle.
+- **dataset_2_headech_prodrom.csv**: clinical headache prodrom experiment from an clinical company.
+- **dataset_3_liver-disorders.csv**: liver disorders clinical data from Kaggle.
+- **dataset_4_mfeat-morphological.csv**: not sure about this one.
+- **dataset_5_page-blocks.csv**: A page blocks analysis dataset from Kaggle.
+
+The idea is to examine the summary performance on numerical (categorical data treated as numerical) datasets.
 
 <a name="algorithm"/>
 
@@ -49,6 +56,8 @@ Using the best result from the last iteration, in the following. This way, recei
 - **analysis_converge_process.py**: This class analyze and plot the converge process of a summary algorithm.
 - **summary_wellness_scores.py**: A static class with methods for evaluating the wellness of a summary.
 - **multi_score_multi_ds_experiment.py**: This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes.
+- **table.py**: A simple table class, allowing to populate pandas' dataframe object in an easy way for this programmer.
+- **converge_report.py**: A class responsible to store and provide analysis on a summary's algorithm converge process.
 
 <a name="dependancies"/>
 
