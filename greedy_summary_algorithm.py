@@ -10,6 +10,9 @@ import pandas as pd
 # parallel computing task
 import concurrent.futures
 
+# project import
+from converge_report import ConvergeReport
+
 
 class GreedySummary:
     """
@@ -45,13 +48,7 @@ class GreedySummary:
         # setting the round count to the beginning of the process
         round_count = 1
         # if requested, init empty converge report
-        converge_report = {"rows": [],
-                           "cols": [],
-                           "rows_score": [],
-                           "cols_score": [],
-                           "rows_calc_time": [],
-                           "cols_calc_time": [],
-                           "total_score": []}
+        converge_report = ConvergeReport()
         # init all the vars we need in the process
         old_pick_rows = []
         old_pick_columns = []
@@ -88,18 +85,18 @@ class GreedySummary:
             pick_columns = sorted(pick_columns)
 
             # Add the data for the report
-            converge_report["rows"].append(pick_rows)
-            converge_report["cols"].append(pick_columns)
-            converge_report["rows_score"].append(rows_score)
-            converge_report["cols_score"].append(cols_score)
-            converge_report["rows_calc_time"].append((end_rows_calc - start_rows_calc))
-            converge_report["cols_calc_time"].append((end_cols_calc - start_cols_calc))
-            converge_report["total_score"].append(evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
+            converge_report.add_step(row=pick_rows,
+                                     col=pick_columns,
+                                     row_score=rows_score,
+                                     col_score=cols_score,
+                                     row_calc_time=(end_rows_calc - start_rows_calc),
+                                     col_calc_time=(end_cols_calc - start_cols_calc),
+                                     total_score=evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
 
             # in order to prevent loops, once found, we want to jump to other, random start condition
             if prevent_loop and round_count >= 2:
                 for previous_step in range(round_count - 1):
-                    if pick_rows == converge_report["rows"][previous_step] and pick_columns == converge_report["cols"][previous_step]:
+                    if pick_rows == converge_report.step_get("rows", previous_step) and pick_columns == converge_report.step_get("cols", previous_step):
                         # pick randomly new start
                         pick_rows = []
                         while len(pick_rows) < desired_row_size:
@@ -117,13 +114,13 @@ class GreedySummary:
                         pick_columns = sorted(pick_columns)
 
                         # add these changes in the converge report
-                        converge_report["rows"].append(pick_rows)
-                        converge_report["cols"].append(pick_columns)
-                        converge_report["rows_calc_time"].append(0)  # TODO: maybe can be done better - later
-                        converge_report["cols_calc_time"].append(0)  # TODO: maybe can be done better - later
-                        converge_report["rows_score"].append(row_score_function(dataset, dataset.iloc[pick_rows, :]))
-                        converge_report["cols_score"].append(row_score_function(dataset_transposed, dataset_transposed.iloc[pick_columns, :]))
-                        converge_report["total_score"].append(evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
+                        converge_report.add_step(row=pick_rows,
+                                                 col=pick_columns,
+                                                 row_score=row_score_function(dataset, dataset.iloc[pick_rows, :]),
+                                                 col_score=row_score_function(dataset_transposed, dataset_transposed.iloc[pick_columns, :]),
+                                                 row_calc_time=0,  # TODO: maybe can be done better - later
+                                                 col_calc_time=0,  # TODO: maybe can be done better - later
+                                                 total_score=evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
                         break
 
             # count this step
@@ -131,7 +128,7 @@ class GreedySummary:
 
         # if requested, save the converge report
         if save_converge_report != "":
-            json.dump(converge_report, open(save_converge_report, "w"), indent=2)
+            json.dump(converge_report.to_dict(), open(save_converge_report, "w"), indent=2)
 
         # full return logic
         if is_return_indexes:

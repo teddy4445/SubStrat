@@ -117,7 +117,7 @@ class AnalysisConvergeProcess:
         x = list(range(min([len(rows_compute_time), len(cols_compute_time)])))
         plt.plot(x,
                  [cols_compute_time[step] + rows_compute_time[step] for step in range(len(x))],
-                 "-0",
+                 "-o",
                  color="black",
                  alpha=0.8,
                  label="Iteration")

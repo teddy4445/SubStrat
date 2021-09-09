@@ -175,10 +175,10 @@ class Main:
 if __name__ == '__main__':
     for size in [30, 50, 200, 1000, 2000]:
         print("Starting to work on size: {}".format(size))
-        Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "data.csv"),
+        Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "dataset_1_birds_sings.csv"),
                  data_row_working_size=size,
-                 data_rows_name_to_delete=["id", "species", "genus"],
-                 desired_row_size=20,
-                 desired_col_size=20,
+                 data_rows_name_to_delete=["id", "target", "genus"],
+                 desired_row_size=2,
+                 desired_col_size=2,
                  result_file_path=os.path.join(os.path.dirname(__file__), Main.RESULTS_FOLDER_NAME,
                                                "summary_{}.csv".format(datetime.now().strftime(Main.FILE_TIME_FORMAT))))
