@@ -95,12 +95,11 @@ class MultiScoreMultiDatasetExperiment:
                                                                   "process_time": df_table_process_time,
                                                                   "step_compute": df_table_step_compute}.items()}
             # save the tables into a CSVs files
-            [df.to_csv(path_or_buf=os.path.join(main_save_folder_path, "{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name)))
-             for df_name, df in dfs]
+            [df.to_csv(os.path.join(main_save_folder_path, "{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name))) for df_name, df in dfs.items()]
             # covert the table into a heatmap and save as an image
             [AnalysisConvergeProcess.heatmap(df=df,
-                                             save_path=os.path.join(main_save_folder_path, "heatmap_{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name)))
-             for df_name, df in dfs]
+                                             save_path=os.path.join(main_save_folder_path, "heatmap_{}X{}_{}.png".format(desired_row_size, desired_col_size, df_name)))
+             for df_name, df in dfs.items()]
 
 
 def prepare_dataset(df):

@@ -34,8 +34,9 @@ class AnalysisConvergeProcess:
         Print a heatmap of the dataframe and save in the requested path
         """
         sns.heatmap(df, cmap="coolwarm")
-        plt.xticks(list(range(df.shape[1])), list(df))
-        plt.yticks(list(range(df.shape[0])), list(df.index))
+        plt.xticks([val + 0.5 for val in list(range(df.shape[1]))], [tick.replace(".csv", "") for tick in list(df)])
+        plt.yticks([val + 0.5 for val in list(range(df.shape[0]))], list(df.index))
+        plt.tight_layout()
         plt.savefig(save_path)
         plt.close()
 

@@ -27,7 +27,10 @@ class SummaryWellnessScores:
         :param distance_metric: a function object that gets two arguments and returns a float as the distance between them
         :return: the score between them ranging (0, inf)
         """
-        return distance_metric(property_function(dataset), property_function(summary))
+        try:
+            return distance_metric(property_function(dataset), property_function(summary))
+        except:
+            return 0
 
     @staticmethod
     def mean_entropy(dataset: pd.DataFrame,
@@ -144,8 +147,7 @@ class SummaryWellnessScores:
         :param matrix: the matrix we want to evaluate
         :return: It measures the average coefficient of anomaly by the ratio of the mean and the standard deviation of the feature values.
         """
-        return np.nanmean([np.nanmean(matrix[column]) / np.nanstd(matrix[column]) if np.nanstd(
-            matrix[column]) > 0 else np.nanmean(matrix[column]) for column in list(matrix)])
+        return np.nanmean([np.nanmean(matrix[column]) / np.nanstd(matrix[column]) if np.nanstd(matrix[column]) > 0 else np.nanmean(matrix[column]) for column in list(matrix)])
 
     @staticmethod
     def _data_stability_test(matrix: pd.DataFrame,
