@@ -9,6 +9,7 @@ from pandas.core.dtypes.common import is_numeric_dtype
 
 # project imports
 from table import Table
+from converge_report import ConvergeReport
 from greedy_summary_algorithm import GreedySummary
 from summary_wellness_scores import SummaryWellnessScores
 from analysis_converge_process import AnalysisConvergeProcess
@@ -46,6 +47,17 @@ class MultiScoreMultiDatasetExperiment:
         except:
             pass
 
+        # init tables for aggregated analysis #
+        # prepare rows
+        summary_rows_ids = []
+        for summary_size in summaries_sizes:
+            for dataset_name in datasets:
+                summary_rows_ids.append("{}_{}X{}".format(dataset_name, summary_size[0], summary_size[1]))
+        summary_table = Table(
+            columns=["steps", "first_row_score", "first_col_score", "minimal_score", "maximal_score", "mean_score",
+                     "first_row_time", "first_col_time", "minimal_time", "maximal_time", "mean_time"],
+            rows_ids=summary_rows_ids)
+
         # run over all summary size wanted
         for summary_size in summaries_sizes:
             desired_row_size = summary_size[0]
@@ -80,6 +92,51 @@ class MultiScoreMultiDatasetExperiment:
                                                                          desired_row_size,
                                                                          desired_col_size)),
                                                                  max_iter=max_iter)
+
+                    # generate and save a process plot
+                    AnalysisConvergeProcess.iou_greedy_converge(rows_list=converge_report["rows"],
+                                                                cols_list=converge_report["cols"],
+                                                                save_path=os.path.join(
+                                                                    main_save_folder_path,
+                                                                    "greedy_converge_{}_{}_summary_{}X{}.png".format(
+                                                                        metric_name,
+                                                                        dataset_name,
+                                                                        desired_row_size,
+                                                                        desired_col_size)))
+                    # generate and save a score of the metric over iterations plot
+                    AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
+                                                                   cols_scores=converge_report["cols_score"],
+                                                                   total_scores=converge_report["total_score"],
+                                                                   save_path=os.path.join(
+                                                                       main_save_folder_path,
+                                                                       "greedy_converge_scores_{}_{}_summary_{}X{}.png".format(
+                                                                           metric_name,
+                                                                           dataset_name,
+                                                                           desired_row_size,
+                                                                           desired_col_size)))
+                    # generate and save a time of compute over iterations plot
+                    AnalysisConvergeProcess.greedy_converge_times(rows_compute_time=converge_report["rows_calc_time"],
+                                                                  cols_compute_time=converge_report["cols_calc_time"],
+                                                                  save_path=os.path.join(
+                                                                      main_save_folder_path,
+                                                                      "greedy_converge_times_{}_{}_summary_{}X{}.png".format(
+                                                                          metric_name,
+                                                                          dataset_name,
+                                                                          desired_row_size,
+                                                                          desired_col_size)))
+                    # make a summary video
+                    AnalysisConvergeProcess.picking_summary_video(rows_list=converge_report["rows"],
+                                                                  cols_list=converge_report["cols"],
+                                                                  original_data_set_shape=dataset.shape,
+                                                                  save_path_folder=os.path.join(
+                                                                      main_save_folder_path,
+                                                                      "video_{}_{}_{}X{}.png".format(
+                                                                          metric_name,
+                                                                          dataset_name,
+                                                                          desired_row_size,
+                                                                          desired_col_size)),
+                                                                  fps=1)
+
                     # save results into a table
                     df_table_scores.add(column=metric_name,
                                         row_id=dataset_name,
@@ -90,16 +147,76 @@ class MultiScoreMultiDatasetExperiment:
                     df_table_process_time.add(column=metric_name,
                                               row_id=dataset_name,
                                               data_point=converge_report.compute_time())
+
+                    # add data to the summay table
+                    MultiScoreMultiDatasetExperiment._add_summary_table_row(summary_table=summary_table,
+                                                                            converge_report=converge_report,
+                                                                            row_id="{}_{}X{}".format(dataset_name,
+                                                                                                     desired_row_size,
+                                                                                                     desired_col_size))
+
             # convert tables into dataframes
             dfs = {name: table.to_dataframe() for name, table in {"scores": df_table_scores,
                                                                   "process_time": df_table_process_time,
                                                                   "step_compute": df_table_step_compute}.items()}
             # save the tables into a CSVs files
-            [df.to_csv(os.path.join(main_save_folder_path, "{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name))) for df_name, df in dfs.items()]
+            [df.to_csv(
+                os.path.join(main_save_folder_path, "{}X{}_{}.csv".format(desired_row_size, desired_col_size, df_name)))
+             for df_name, df in dfs.items()]
             # covert the table into a heatmap and save as an image
             [AnalysisConvergeProcess.heatmap(df=df,
-                                             save_path=os.path.join(main_save_folder_path, "heatmap_{}X{}_{}.png".format(desired_row_size, desired_col_size, df_name)))
+                                             save_path=os.path.join(main_save_folder_path,
+                                                                    "heatmap_{}X{}_{}.png".format(desired_row_size,
+                                                                                                  desired_col_size,
+                                                                                                  df_name)))
              for df_name, df in dfs.items()]
+
+    @staticmethod
+    def _add_summary_table_row(summary_table: Table,
+                               converge_report: ConvergeReport,
+                               row_id: str):
+        """
+        This function responsible to add a summary table row to the summary table
+        :param summary_table: the summary table instance
+        :param converge_report: the new converge report
+        :param row_id: the dataset and sizes of the converge report's name
+        :return: none, modify the summary table
+        """
+        summary_table.add(column="steps",
+                          row_id=row_id,
+                          data_point=converge_report.steps_count())
+        summary_table.add(column="first_row_time",
+                          row_id=row_id,
+                          data_point=converge_report.rows_calc_time[0])
+        summary_table.add(column="first_col_score",
+                          row_id=row_id,
+                          data_point=converge_report.cols_calc_time[0])
+        summary_table.add(column="minimal_score",
+                          row_id=row_id,
+                          data_point=min([min(converge_report.rows_calc_time), min(converge_report.cols_calc_time)]))
+        summary_table.add(column="maximal_score",
+                          row_id=row_id,
+                          data_point=max([max(converge_report.rows_calc_time), max(converge_report.cols_calc_time)]))
+        summary_table.add(column="mean_score",
+                          row_id=row_id,
+                          data_point=np.nanmean(
+                              [np.nanmean(converge_report.rows_calc_time), np.nanmean(converge_report.cols_calc_time)]))
+        summary_table.add(column="first_row_score",
+                          row_id=row_id,
+                          data_point=converge_report.rows_score[0])
+        summary_table.add(column="first_col_score",
+                          row_id=row_id,
+                          data_point=converge_report.cols_score[0])
+        summary_table.add(column="minimal_score",
+                          row_id=row_id,
+                          data_point=min([min(converge_report.rows_score), min(converge_report.cols_score)]))
+        summary_table.add(column="maximal_score",
+                          row_id=row_id,
+                          data_point=max([max(converge_report.rows_score), max(converge_report.cols_score)]))
+        summary_table.add(column="mean_score",
+                          row_id=row_id,
+                          data_point=np.nanmean(
+                              [np.nanmean(converge_report.rows_score), np.nanmean(converge_report.cols_score)]))
 
 
 def prepare_dataset(df):
