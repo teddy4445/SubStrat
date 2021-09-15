@@ -53,7 +53,7 @@ class MultiScoreMultiDatasetExperiment:
                 summary_rows_ids.append("{}_{}X{}".format(dataset_name, summary_size[0], summary_size[1]))
         summary_table = Table(
             columns=["steps", "first_row_score", "first_col_score", "last_row_score", "last_col_score",
-                     "minimal_row_score", "minimal_col_score", "maximal_row_score" "maximal_col_score",
+                     "minimal_row_score", "minimal_col_score", "maximal_row_score", "maximal_col_score",
                      "mean_row_score", "mean_col_score", "first_row_time", "first_col_time",
                      "last_row_time", "last_col_time", "minimal_row_time", "minimal_col_time",
                      "maximal_row_time", "maximal_col_time", "mean_row_time", "mean_col_time"],
@@ -77,7 +77,10 @@ class MultiScoreMultiDatasetExperiment:
                 # run over all the datasets
                 for dataset_name, dataset in datasets.items():
                     # alert the user
-                    print("Working on dataset '{}' with metric '{}'".format(dataset_name, metric_name))
+                    print("For summary size ({}X{}), working on dataset '{}' with metric '{}'".format(desired_row_size,
+                                                                                                      desired_col_size,
+                                                                                                      dataset_name,
+                                                                                                      metric_name))
                     # run the summary and obtain result and coverage report
                     summary, converge_report = GreedySummary.run(dataset=dataset,
                                                                  desired_row_size=desired_row_size,
@@ -230,7 +233,7 @@ def prepare_dataset(df):
 def run_test():
     # load and prepare datasets
     datasets = {os.path.basename(path): prepare_dataset(pd.read_csv(path))
-                for path in glob(os.path.join(os.path.dirname(__file__), "data", "*.csv"))}
+                for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     MultiScoreMultiDatasetExperiment.run(datasets=datasets,
                                          score_metrics={

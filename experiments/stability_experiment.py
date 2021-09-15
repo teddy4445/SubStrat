@@ -20,7 +20,7 @@ class StabilityExperiment:
     This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes
     """
 
-    METRIC = SummaryWellnessScores.mean_entropy
+    METRIC = SummaryWellnessScores.mean_pearson_corr
 
     def __init__(self):
         pass
@@ -58,14 +58,16 @@ class StabilityExperiment:
                 for algo_name, algo in algorithms.items():
                     summary_table.add(column=dataset_name,
                                       row_id=algo_name,
-                                      data_point=StabilityExperiment._stability_test(dataset=df,
-                                                                                     summary_col_size=desired_row_size,
-                                                                                     summary_row_size=desired_col_size,
+                                      data_point=StabilityExperiment._stability_test(dataset_name=dataset_name,
+                                                                                     algo_name=algo_name,
+                                                                                     dataset=df,
+                                                                                     summary_row_size=desired_row_size,
+                                                                                     summary_col_size=desired_col_size,
                                                                                      summary_algorithm=algo,
                                                                                      noise=0.1,
                                                                                      repeats=3,
                                                                                      start_condition_repeat=3,
-                                                                                     max_iter=30,
+                                                                                     max_iter=max_iter,
                                                                                      save_converge_report=os.path.join(
                                                                                          main_save_folder_path,
                                                                                          "greedy_converge_scores_{}_{}_summary_{}X{}.png".format(
@@ -74,10 +76,14 @@ class StabilityExperiment:
                                                                                              desired_row_size,
                                                                                              desired_col_size))))
 
-            summary_table.to_csv(save_path=os.path.join(main_save_folder_path, "summary_table_{}X{}.csv".format(desired_row_size, desired_col_size)))
+            summary_table.to_csv(save_path=os.path.join(main_save_folder_path,
+                                                        "summary_table_{}X{}.csv".format(desired_row_size,
+                                                                                         desired_col_size)))
 
     @staticmethod
-    def _stability_test(dataset: pd.DataFrame,
+    def _stability_test(dataset_name: str,
+                        algo_name: str,
+                        dataset: pd.DataFrame,
                         summary_row_size: int,
                         summary_col_size: int,
                         summary_algorithm,
@@ -91,6 +97,12 @@ class StabilityExperiment:
             noised_dataset = StabilityExperiment._add_dataset_gussian_noise(dataset=dataset,
                                                                             noise=noise)
             for start_condition in range(start_condition_repeat):
+                print("Dataset '{}' and algo '{}' Repeat {}/{} with start condition repeat {}/{}".format(dataset_name,
+                                                                                                         algo_name,
+                                                                                                         repeat + 1,
+                                                                                                         repeats,
+                                                                                                         start_condition + 1,
+                                                                                                         start_condition_repeat))
                 summary, converge_report = summary_algorithm.run(dataset=noised_dataset,
                                                                  desired_row_size=summary_row_size,
                                                                  desired_col_size=summary_col_size,
@@ -99,8 +111,10 @@ class StabilityExperiment:
                                                                  save_converge_report=os.path.join(
                                                                      save_converge_report),
                                                                  max_iter=max_iter)
-                scores.append(StabilityExperiment.METRIC(dataset=noised_dataset,
-                                                         summary=summary))
+                score = StabilityExperiment.METRIC(dataset=noised_dataset,
+                                                   summary=summary)
+                print("Obtain score={:.5f}".format(score))
+                scores.append(score)
         return np.nanmean(scores), np.nanstd(scores)
 
     @staticmethod
@@ -120,8 +134,8 @@ def prepare_dataset(df):
 
 def run_test():
     # load and prepare datasets
-    datasets = {os.path.basename(path): prepare_dataset(pd.read_csv(path))
-                for path in glob(os.path.join(os.path.dirname(__file__), "data", "*.csv"))}
+    datasets = {os.path.basename(path).replace(".csv", ""): prepare_dataset(pd.read_csv(path))
+                for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     StabilityExperiment.run(datasets=datasets,
                             algorithms={
@@ -129,8 +143,8 @@ def run_test():
                                 "greedy": GreedySummary
                             },
                             summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
-                            main_save_folder_path=os.path.join(os.path.dirname(__file__), "results"),
-                            max_iter=30)
+                            main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),
+                            max_iter=50)
 
 
 if __name__ == '__main__':

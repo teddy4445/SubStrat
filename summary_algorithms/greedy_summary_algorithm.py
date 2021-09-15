@@ -107,7 +107,7 @@ class GreedySummary(BaseSummary):
                                 pick_rows.append(new_value)
                         pick_columns = []
                         while len(pick_rows) < desired_col_size:
-                            new_value = random.choice(list(range(dataset.shape[2])))
+                            new_value = random.choice(list(range(dataset.shape[1])))
                             if new_value not in pick_rows:
                                 pick_columns.append(new_value)
 
