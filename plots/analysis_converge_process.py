@@ -1,13 +1,12 @@
 # library imports
 import os
-import math
 import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 # project imports
-from movie_from_images_maker import MovieFromImages
+from plots.movie_from_images_maker import MovieFromImages
 
 
 class AnalysisConvergeProcess:

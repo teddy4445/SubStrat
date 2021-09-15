@@ -34,3 +34,16 @@ class Table:
         Convert the 'Table' instance to pd.DataFrame instance
         """
         return pd.DataFrame(data=self.data, columns=self.columns, index=self.rows_ids)
+
+    def to_csv(self,
+               save_path: str):
+        """
+        Convert the 'Table' instance to CSV file and save it
+        """
+        self.to_dataframe().to_csv(save_path)
+
+    def __repr__(self):
+        return "<Table: {}X{}>".format(len(self.rows_ids), len(self.columns))
+
+    def __str__(self):
+        return "Table: {}X{}\n--------------\n{}".format(len(self.rows_ids), len(self.columns), self.data)

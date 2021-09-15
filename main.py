@@ -5,10 +5,10 @@ import pandas as pd
 from datetime import datetime
 
 # project imports
-from greedy_summary_algorithm import GreedySummary
-from summary_wellness_scores import SummaryWellnessScores
-from analysis_converge_process import AnalysisConvergeProcess
-from summary_process_score_functions import SummaryProcessScoreFunctions
+from summary_algorithms.greedy_summary_algorithm import GreedySummary
+from methods.summary_wellness_scores import SummaryWellnessScores
+from plots.analysis_converge_process import AnalysisConvergeProcess
+from methods.summary_process_score_functions import SummaryProcessScoreFunctions
 
 
 class Main:

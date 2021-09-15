@@ -1,35 +1,34 @@
 # library imports
-import math
 import json
 import time
 import random
 import collections
-import numpy as np
 import pandas as pd
 
-# parallel computing task
-import concurrent.futures
-
 # project import
-from converge_report import ConvergeReport
+from ds.converge_report import ConvergeReport
+from summary_algorithms.base_summary_algorithm import BaseSummary
 
 
-class GreedySummary:
+class GreedySummary(BaseSummary):
     """
     This class is a wrapper over the greedy summary algorithm
     """
 
+    # GLOBAL PARMS #
+    PREVENT_LOOP = True
+    # END - GLOBAL PARMS #
+
     def __init__(self):
-        pass
+        BaseSummary.__init__(self)
 
     @staticmethod
     def run(dataset: pd.DataFrame,
             desired_row_size: int,
             desired_col_size: int,
-            row_score_function,
             evaluate_score_function,
             save_converge_report: str = "",
-            prevent_loop: bool = True,
+            row_score_function = None,
             is_return_indexes: bool = False,
             max_iter: int = -1):
         """
@@ -40,11 +39,14 @@ class GreedySummary:
         :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
         :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
-        :param prevent_loop: boolean flag, to check if we have loops in arbitrary size in the process, and start prevention logic
         :param is_return_indexes:  boolean flag to return summary's rows indexes of after applying to the dataset itself
         :param max_iter: the maximum number of iteration we allow to do (default - unlimited)
         :return: the summary of the dataset with converge report (dict)
         """
+        # just to make sure we have the row_function and evaluate_score function to be the same one
+        if row_score_function is None:
+            row_score_function = evaluate_score_function
+
         # setting the round count to the beginning of the process
         round_count = 1
         # if requested, init empty converge report
@@ -94,7 +96,7 @@ class GreedySummary:
                                      total_score=evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
 
             # in order to prevent loops, once found, we want to jump to other, random start condition
-            if prevent_loop and round_count >= 2:
+            if GreedySummary.PREVENT_LOOP and round_count >= 2:
                 for previous_step in range(round_count - 1):
                     if pick_rows == converge_report.step_get("rows", previous_step) and pick_columns == converge_report.step_get("cols", previous_step):
                         # pick randomly new start
