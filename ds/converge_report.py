@@ -52,8 +52,8 @@ class ConvergeReport:
 
     def to_dict(self):
         return {
-            "rows": self.rows,
-            "cols": self.cols,
+            "_rows": self.rows,
+            "_cols": self.cols,
             "rows_score": self.rows_score,
             "cols_score": self.cols_score,
             "rows_calc_time": self.rows_calc_time,
@@ -68,9 +68,9 @@ class ConvergeReport:
 
     def __getitem__(self,
                     key: str):
-        if key == "rows":
+        if key == "_rows":
             return self.rows
-        elif key == "cols":
+        elif key == "_cols":
             return self.cols
         elif key == "rows_score":
             return self.rows_score

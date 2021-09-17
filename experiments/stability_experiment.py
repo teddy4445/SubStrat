@@ -10,6 +10,7 @@ from ds.table import Table
 from ds.converge_report import ConvergeReport
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
 from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
+from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 from methods.summary_wellness_scores import SummaryWellnessScores
 from plots.analysis_converge_process import AnalysisConvergeProcess
 from methods.summary_process_score_functions import SummaryProcessScoreFunctions
@@ -32,10 +33,10 @@ class StabilityExperiment:
             main_save_folder_path: str,
             max_iter: int = 30):
         """
-        Generate multiple tables of: rows -> dataset, columns ->  summary score metrics, divided by summary sizes
+        Generate multiple tables of: _rows -> dataset, columns ->  summary score metrics, divided by summary sizes
         :param datasets: a dict of datasets names (as keys) and pandas' dataframe (as values)
         :param algorithms: a dict of algorithms one wants to test one vs. the other
-        :param summaries_sizes: a list of tuples (with 2 elements) - the number of rows and the number of columns
+        :param summaries_sizes: a list of tuples (with 2 elements) - the number of _rows and the number of columns
         :param main_save_folder_path: the folder name where we wish to write the results in
         :param max_iter: the maximum number of iteration we allow to do for one combination of dataset, metric, summary size
         :return: None, save csv files and plots to the folder
@@ -54,8 +55,17 @@ class StabilityExperiment:
             summary_table = Table(columns=[dataset_name for dataset_name in datasets],
                                   rows_ids=[algo_name for algo_name in algorithms])
 
+            # run over all the algorithms
             for dataset_name, df in datasets.items():
+                # edge cases in the summary size
+                if desired_row_size < 1:
+                    desired_row_size = df.shape[0]
+                if desired_col_size < 1:
+                    desired_col_size = df.shape[1]
+
+                # run over all the algorithms
                 for algo_name, algo in algorithms.items():
+
                     summary_table.add(column=dataset_name,
                                       row_id=algo_name,
                                       data_point=StabilityExperiment._stability_test(dataset_name=dataset_name,
@@ -66,12 +76,13 @@ class StabilityExperiment:
                                                                                      summary_algorithm=algo,
                                                                                      noise=0.1,
                                                                                      repeats=3,
-                                                                                     start_condition_repeat=3,
+                                                                                     start_condition_repeat=1,
                                                                                      max_iter=max_iter,
                                                                                      save_converge_report=os.path.join(
                                                                                          main_save_folder_path,
-                                                                                         "greedy_converge_scores_{}_{}_summary_{}X{}.png".format(
+                                                                                         "{}_{}_{}_{}X{}.json".format(
                                                                                              "mean_entropy",
+                                                                                             algo_name,
                                                                                              dataset_name,
                                                                                              desired_row_size,
                                                                                              desired_col_size))))
@@ -92,6 +103,21 @@ class StabilityExperiment:
                         start_condition_repeat: int,
                         max_iter: int,
                         save_converge_report: str):
+        # save path folder
+        inner_folder = "{}_{}_{}X{}".format(dataset_name, algo_name, summary_row_size, summary_col_size)
+        try:
+            os.mkdir(os.path.join(os.path.dirname(save_converge_report), inner_folder))
+        except Exception as error:
+            pass
+
+        base_line_summary, converge_report = summary_algorithm.run(dataset=dataset,
+                                                                   desired_row_size=summary_row_size,
+                                                                   desired_col_size=summary_col_size,
+                                                                   evaluate_score_function=StabilityExperiment.METRIC,
+                                                                   is_return_indexes=False,
+                                                                   save_converge_report="",
+                                                                   max_iter=max_iter)
+
         scores = []
         for repeat in range(repeats):
             noised_dataset = StabilityExperiment._add_dataset_gussian_noise(dataset=dataset,
@@ -103,19 +129,35 @@ class StabilityExperiment:
                                                                                                          repeats,
                                                                                                          start_condition + 1,
                                                                                                          start_condition_repeat))
+                # save path
+                save_path = os.path.join(os.path.dirname(save_converge_report), inner_folder,
+                                         os.path.basename(save_converge_report).replace(".json",
+                                                                                        "_{}_{}.json".format(repeat,
+                                                                                                             start_condition)))
+
+                # calc summary and coverage report
                 summary, converge_report = summary_algorithm.run(dataset=noised_dataset,
                                                                  desired_row_size=summary_row_size,
                                                                  desired_col_size=summary_col_size,
                                                                  evaluate_score_function=StabilityExperiment.METRIC,
                                                                  is_return_indexes=False,
-                                                                 save_converge_report=os.path.join(
-                                                                     save_converge_report),
+                                                                 save_converge_report=save_path,
                                                                  max_iter=max_iter)
-                score = StabilityExperiment.METRIC(dataset=noised_dataset,
-                                                   summary=summary)
-                print("Obtain score={:.5f}".format(score))
-                scores.append(score)
-        return np.nanmean(scores), np.nanstd(scores)
+
+                # generate and save a score of the metric over iterations plot
+                AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
+                                                               cols_scores=converge_report["cols_score"],
+                                                               total_scores=converge_report["total_score"],
+                                                               save_path=save_path.replace(".json", ".png"),
+                                                               y_label="'{}' algorithm's error [1]".format(algo_name))
+                # calc stability score
+                try:
+                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary) / StabilityExperiment.METRIC(dataset=dataset, summary=noised_dataset))
+                except:
+                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary))
+                print("Obtain stability score={:.5f}".format(stability_score))
+                scores.append(stability_score)
+        return "{} \\pm {}".format(np.nanmean(scores), np.nanstd(scores))
 
     @staticmethod
     def _add_dataset_gussian_noise(dataset: pd.DataFrame,
@@ -126,10 +168,10 @@ class StabilityExperiment:
 def prepare_dataset(df):
     # remove what we do not need
     df.drop([col for col in list(df) if not is_numeric_dtype(df[col])], axis=1, inplace=True)
-    # remove rows with nan
+    # remove _rows with nan
     df.dropna(inplace=True)
-    # get only max number of rows to work with
-    return df.iloc[:200, :]
+    # get only max number of _rows to work with
+    return df.iloc[:200, -5:]
 
 
 def run_test():
@@ -140,11 +182,12 @@ def run_test():
     StabilityExperiment.run(datasets=datasets,
                             algorithms={
                                 "las_vegas": LasVegasSummary,
-                                "greedy": GreedySummary
+                                "greedy": GreedySummary,
+                                "genetic": GeneticSummary,
                             },
-                            summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
+                            summaries_sizes=[(10, 0), (20, 0), (30, 0)],
                             main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),
-                            max_iter=50)
+                            max_iter=30)
 
 
 if __name__ == '__main__':

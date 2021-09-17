@@ -49,9 +49,9 @@ class Main:
         """
         Single entry point to the class
         :param data_file_path: the path to the file with the tabular data
-        :param data_row_working_size: the number of rows we want to reduce the original file (so we could work with in reasonable time)
+        :param data_row_working_size: the number of _rows we want to reduce the original file (so we could work with in reasonable time)
         :param data_rows_name_to_delete: list of columns name we want to remove from the original dataset
-        :param desired_row_size: the number of rows we want in the summary
+        :param desired_row_size: the number of _rows we want in the summary
         :param desired_col_size: the number of columns we want in the summary
         :param result_file_path: the path to the folder we want to save the results in
         :return: None, same several files
@@ -104,7 +104,7 @@ class Main:
         """
         Responsible to read and reduce size of the dataset we need to work with
         :param data_file_path: the path to the file with the tabular data
-        :param data_row_working_size: the number of rows we want to reduce the original file (so we could work with in reasonable time)
+        :param data_row_working_size: the number of _rows we want to reduce the original file (so we could work with in reasonable time)
         :param data_rows_name_to_delete: list of columns name we want to remove from the original dataset
         :return: the reduced dataset as pandas' dataframe object
         """
@@ -112,7 +112,7 @@ class Main:
         df = pd.read_csv(data_file_path)
         # remove unwanted columns
         df.drop(data_rows_name_to_delete, axis=1, inplace=True)
-        # down sample the dataset so we can work with - take the first rows (random decision, can be changes later)
+        # down sample the dataset so we can work with - take the first _rows (random decision, can be changes later)
         df = df.iloc[:data_row_working_size, :]
         return df
 
@@ -123,7 +123,7 @@ class Main:
         """
         Activates the summary algorithm
         :param data: the dataset we will use in the summary process
-        :param desired_row_size: the number of rows we want in the summary
+        :param desired_row_size: the number of _rows we want in the summary
         :param desired_col_size: the number of columns we want in the summary
         :return: the summary (pandas' dataframe) and the converge process (dict)
         """
@@ -152,8 +152,8 @@ class Main:
         # save the summary for a file
         summary.to_csv(result_file_path, index=False)
         # generate and save a process plot
-        AnalysisConvergeProcess.iou_greedy_converge(rows_list=converge_report["rows"],
-                                                    cols_list=converge_report["cols"],
+        AnalysisConvergeProcess.iou_greedy_converge(rows_list=converge_report["_rows"],
+                                                    cols_list=converge_report["_cols"],
                                                     save_path=Main.SUMMARY_REPORT_PLOT_FILE_PATH)
         # generate and save a score of the metric over iterations plot
         AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
@@ -165,8 +165,8 @@ class Main:
                                                       cols_compute_time=converge_report["cols_calc_time"],
                                                       save_path=Main.SUMMARY_REPORT_TIMES_PLOT_FILE_PATH)
         # make a summary video
-        AnalysisConvergeProcess.picking_summary_video(rows_list=converge_report["rows"],
-                                                      cols_list=converge_report["cols"],
+        AnalysisConvergeProcess.picking_summary_video(rows_list=converge_report["_rows"],
+                                                      cols_list=converge_report["_cols"],
                                                       original_data_set_shape=data_shape,
                                                       save_path_folder=Main.PICKING_SUMMARY_VIDEO_FOLDER,
                                                       fps=4)

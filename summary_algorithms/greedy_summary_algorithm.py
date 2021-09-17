@@ -34,12 +34,12 @@ class GreedySummary(BaseSummary):
         """
         A row-columns greedy dataset summary algorithm
         :param dataset: the dataset we work on (pandas' dataframe)
-        :param desired_row_size: the size of the summary as the number of rows (int)
+        :param desired_row_size: the size of the summary as the number of _rows (int)
         :param desired_col_size: the size of the summary as the number of columns (int)
         :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
         :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
-        :param is_return_indexes:  boolean flag to return summary's rows indexes of after applying to the dataset itself
+        :param is_return_indexes:  boolean flag to return summary's _rows indexes of after applying to the dataset itself
         :param max_iter: the maximum number of iteration we allow to do (default - unlimited)
         :return: the summary of the dataset with converge report (dict)
         """
@@ -54,7 +54,7 @@ class GreedySummary(BaseSummary):
         # init all the vars we need in the process
         old_pick_rows = []
         old_pick_columns = []
-        pick_rows = list(range(dataset.shape[0]))  # all rows
+        pick_rows = list(range(dataset.shape[0]))  # all _rows
         pick_columns = list(range(dataset.shape[1]))  # all columns
         # calc once the transpose of the dataset (matrix) for the second step in each iteration
         dataset_transposed = dataset.transpose()
@@ -62,24 +62,30 @@ class GreedySummary(BaseSummary):
         # when no other swap is taken place, this is the equilibrium and we can stop searching
         # Note: we introduce the "max_iter" stop condition in order stop the run after enough steps
         while (round_count < max_iter or max_iter == -1) and (collections.Counter(old_pick_rows) != collections.Counter(pick_rows) or collections.Counter(old_pick_columns) != collections.Counter(pick_columns)):
-            # recall last step's rows and columns indexes
+            # recall last step's _rows and columns indexes
             old_pick_rows = pick_rows.copy()
             old_pick_columns = pick_columns.copy()
 
-            # optimize over the rows
+            # optimize over the _rows
             start_rows_calc = time.time()  # just for time measurement tasks
-            pick_rows, rows_score = GreedySummary._greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
-                                                                      desired_row_size=desired_row_size,
-                                                                      score_function=row_score_function,
-                                                                      is_return_indexes=True)
+            if desired_col_size < dataset.shape[0]:
+                pick_rows, rows_score = GreedySummary._greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
+                                                                          desired_row_size=desired_row_size,
+                                                                          score_function=row_score_function,
+                                                                          is_return_indexes=True)
+            else:
+                pick_rows, rows_score = list(range(dataset.shape[0])), 0
             end_rows_calc = time.time()  # just for time measurement tasks
 
             # optimize over the columns
             start_cols_calc = time.time()  # just for time measurement tasks
-            pick_columns, cols_score = GreedySummary._greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
-                                                                         desired_row_size=desired_col_size,
-                                                                         score_function=row_score_function,
-                                                                         is_return_indexes=True)
+            if desired_col_size < dataset.shape[1]:
+                pick_columns, cols_score = GreedySummary._greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
+                                                                             desired_row_size=desired_col_size,
+                                                                             score_function=row_score_function,
+                                                                             is_return_indexes=True)
+            else:
+                pick_columns, cols_score = list(range(dataset.shape[1])), 0
             end_cols_calc = time.time()  # just for time measurement tasks
 
             # sort the indexes - just for easy review later
@@ -98,7 +104,7 @@ class GreedySummary(BaseSummary):
             # in order to prevent loops, once found, we want to jump to other, random start condition
             if GreedySummary.PREVENT_LOOP and round_count >= 2:
                 for previous_step in range(round_count - 1):
-                    if pick_rows == converge_report.step_get("rows", previous_step) and pick_columns == converge_report.step_get("cols", previous_step):
+                    if pick_rows == converge_report.step_get("_rows", previous_step) and pick_columns == converge_report.step_get("_cols", previous_step):
                         # pick randomly new start
                         pick_rows = []
                         while len(pick_rows) < desired_row_size:
@@ -143,27 +149,27 @@ class GreedySummary(BaseSummary):
                             score_function,
                             is_return_indexes: bool = False):
         """
-        The greedy algorithm for only the rows (columns when transposed matrix)
+        The greedy algorithm for only the _rows (columns when transposed matrix)
         :param dataset: the dataset we work on (pandas' dataframe)
-        :param desired_row_size: the size of the summary as the number of rows (int)
+        :param desired_row_size: the size of the summary as the number of _rows (int)
         :param score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe)
                                 and give a score (float) to the summary
-        :param is_return_indexes: boolean flag to return summary's rows indexes of after applying to the dataset itself
-        :return: summary and converge report mean score (over all the rows)
+        :param is_return_indexes: boolean flag to return summary's _rows indexes of after applying to the dataset itself
+        :return: summary and converge report mean score (over all the _rows)
         """
-        # find all the rows indexes
+        # find all the _rows indexes
         all_rows_indexes = set(list(range(dataset.shape[0])))
         # init vars
         sample_rows_indexes = []
         best_scores = []
-        # run until we have the desired number of rows in the summary
+        # run until we have the desired number of _rows in the summary
         for i in range(desired_row_size):
             # init to max to replace in the first time
             best_new_row_index = -1
             best_new_row_score = float("inf")
-            # get only the relevant rows
+            # get only the relevant _rows
             search_rows_indexes = all_rows_indexes - set(sample_rows_indexes)
-            # run over all relevant rows and calc the score
+            # run over all relevant _rows and calc the score
             for check_row_index in search_rows_indexes:
                 check_summary = sample_rows_indexes.copy()
                 check_summary.append(check_row_index)

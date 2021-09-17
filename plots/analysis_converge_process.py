@@ -44,9 +44,9 @@ class AnalysisConvergeProcess:
                             cols_list: list,
                             save_path: str):
         """
-        Plot a scatter plot of the changes in the summary rows and cols with the IOU metric over the process
-        :param rows_list: list of list of rows indexes from the summary algorithm
-        :param cols_list: list of list of rows indexes from the summary algorithm
+        Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
+        :param rows_list: list of list of _rows indexes from the summary algorithm
+        :param cols_list: list of list of _rows indexes from the summary algorithm
         :param save_path: a path to save the plot in
         :return: save plot
         """
@@ -77,13 +77,17 @@ class AnalysisConvergeProcess:
     def greedy_converge_scores(rows_scores: list,
                                cols_scores: list,
                                total_scores: list,
-                               save_path: str):
+                               save_path: str,
+                               y_label: str = "Greedy algorithm's scoring function's score [1]",
+                               x_label: str = "Algorithmic step [1]"):
         """
-        Plot a scatter plot of the changes in the summary rows and cols with the IOU metric over the process
-        :param rows_scores: list of scores from the algorithms converge process for the rows
-        :param cols_scores: list of scores from the algorithms converge process for the cols
-        :param cols_scores: list of scores from the algorithms converge process for the rows and columns
+        Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
+        :param rows_scores: list of scores from the algorithms converge process for the _rows
+        :param cols_scores: list of scores from the algorithms converge process for the _cols
+        :param cols_scores: list of scores from the algorithms converge process for the _rows and columns
         :param save_path: a path to save the plot in
+        :param y_label: the string we want to print on the y-label
+        :param x_label: the string we want to print on the x-label
         :return: save plot
         """
         x = list(range(min([len(total_scores), len(rows_scores), len(cols_scores)])))
@@ -108,8 +112,8 @@ class AnalysisConvergeProcess:
         plt.xlim((0, len(x)))
         plt.grid(axis="y", alpha=0.3)
         plt.legend()
-        plt.xlabel("Algorithmic step [1]")
-        plt.ylabel("Greedy algorithm's scoring function's score [1]")
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
         plt.savefig(save_path)
         plt.close()
 
@@ -119,8 +123,8 @@ class AnalysisConvergeProcess:
                               save_path: str,
                               save_cumsum: bool = True):
         """
-        Plot a scatter plot of the changes in the summary rows and cols with the IOU metric over the process
-        :param rows_compute_time: list of commuting time in second from the algorithms converge process for the rows
+        Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
+        :param rows_compute_time: list of commuting time in second from the algorithms converge process for the _rows
         :param cols_compute_time: list of commuting time in second from the algorithms converge process for the columns
         :param save_cumsum: save the same version but with cumsum
         :param save_path: a path to save the plot in
@@ -169,8 +173,8 @@ class AnalysisConvergeProcess:
                               fps: int = 1):
         """
         Plot a video of the steps
-        :param rows_list: list of list of rows indexes from the summary algorithm
-        :param cols_list: list of list of rows indexes from the summary algorithm
+        :param rows_list: list of list of _rows indexes from the summary algorithm
+        :param cols_list: list of list of _rows indexes from the summary algorithm
         :param original_data_set_shape: the original data of the
         :param save_path_folder: a path to save the plot in
         :param fps: frames per second in the video

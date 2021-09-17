@@ -2,17 +2,25 @@
 import json
 import time
 import random
+import collections
 import pandas as pd
 
 # project import
 from ds.converge_report import ConvergeReport
 from summary_algorithms.base_summary_algorithm import BaseSummary
+from summary_algorithms.ga.gene_population import SummaryGenePopulation, SummaryGene
 
 
-class LasVegasSummary(BaseSummary):
+class GeneticSummary(BaseSummary):
     """
-    This class is a wrapper over the greedy summary algorithm
+    This class is a wrapper over the genetic coding summary algorithm
     """
+
+    # SETTINGS #
+    MUTATION_RATE = 0.05
+    POPULATION_SIZE = 50
+    ROYALTY_RATE = 0.02
+    # END - SETTINGS #
 
     def __init__(self):
         BaseSummary.__init__(self)
@@ -38,6 +46,7 @@ class LasVegasSummary(BaseSummary):
         :param max_iter: the maximum number of iteration we allow to do (default - unlimited)
         :return: the summary of the dataset with converge report (dict)
         """
+
         # make sure we have steps to run
         if max_iter < 1:
             raise Exception("Error at LasVegasSummary.run: the max_iter argument must be larger than 1")
@@ -52,38 +61,45 @@ class LasVegasSummary(BaseSummary):
         best_rows = []
         best_columns = []
 
-        while round_count < max_iter:
-            # pick _rows
-            start_rows_calc = time.time()  # just for time measurement tasks
-            current_rows = LasVegasSummary._pick_random_set(pick_range=dataset.shape[0],
-                                                            pick_size=desired_row_size)
-            end_rows_calc = time.time()  # just for time measurement tasks
+        # init random population
+        gene_population = SummaryGenePopulation.random_population(row_count=dataset.shape[0],
+                                                                  col_count=dataset.shape[1],
+                                                                  summary_rows=desired_row_size,
+                                                                  summary_cols=desired_col_size,
+                                                                  population_size=GeneticSummary.POPULATION_SIZE)
 
-            # optimize over the columns
+        while round_count <= max_iter:
+            # optimize over the columns and rows
+            start_rows_calc = time.time()  # just for time measurement tasks
             start_cols_calc = time.time()  # just for time measurement tasks
-            current_columns = LasVegasSummary._pick_random_set(pick_range=dataset.shape[1],
-                                                               pick_size=desired_col_size)
+            gene_population.selection(royalty_rate=GeneticSummary.ROYALTY_RATE)
+            gene_population.crossover()
+            gene_population.mutation(mutation_rate=GeneticSummary.MUTATION_RATE)
+            gene_population.fitness(dataset=dataset,
+                                    fitness_function=evaluate_score_function)
+            best_gene = gene_population.get_best_gene()
+            end_rows_calc = time.time()  # just for time measurement tasks
             end_cols_calc = time.time()  # just for time measurement tasks
 
             # compute scores
-            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, :])
-            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, current_columns])
-            total_score = evaluate_score_function(dataset, dataset.iloc[current_rows, current_columns])
+            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[best_gene.get_rows(), :])
+            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, best_gene.get_columns()])
+            total_score = evaluate_score_function(dataset, dataset.iloc[best_gene.get_rows(), best_gene.get_columns()])
 
             # Add the data for the report
-            converge_report.add_step(row=current_rows,
-                                     col=current_columns,
+            converge_report.add_step(row=best_gene.get_rows(),
+                                     col=best_gene.get_columns(),
                                      row_score=rows_summary_score,
                                      col_score=cols_summary_score,
-                                     row_calc_time=(end_rows_calc - start_rows_calc),
-                                     col_calc_time=(end_cols_calc - start_cols_calc),
+                                     row_calc_time=(end_rows_calc - start_rows_calc)/2,
+                                     col_calc_time=(end_cols_calc - start_cols_calc)/2,
                                      total_score=total_score)
 
             # check we this summary is better
             if total_score < best_score:
                 best_score = total_score
-                best_rows = current_rows
-                best_columns = current_columns
+                best_rows = best_gene.get_rows()
+                best_columns = best_gene.get_columns()
 
             # count this step
             round_count += 1
@@ -96,15 +112,3 @@ class LasVegasSummary(BaseSummary):
         if is_return_indexes:
             return best_rows, best_columns, converge_report
         return dataset.iloc[best_rows, best_columns], converge_report
-
-    @staticmethod
-    def _pick_random_set(pick_range: int,
-                         pick_size: int):
-        """
-        Pick unique set out of a pick range in size 'pick_size'
-        """
-        pick_range_set = range(pick_range)
-        answer = set()
-        while len(answer) < pick_size:
-            answer.add(random.choice(pick_range_set))
-        return sorted(list(answer))

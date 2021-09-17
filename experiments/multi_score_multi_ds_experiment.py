@@ -11,15 +11,27 @@ from pandas.core.dtypes.common import is_numeric_dtype
 from ds.table import Table
 from ds.converge_report import ConvergeReport
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
+from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
+from methods.summary_process_score_functions import SummaryProcessScoreFunctions
+from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 from methods.summary_wellness_scores import SummaryWellnessScores
 from plots.analysis_converge_process import AnalysisConvergeProcess
-from methods.summary_process_score_functions import SummaryProcessScoreFunctions
 
 
 class MultiScoreMultiDatasetExperiment:
     """
     This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes
     """
+
+    # CONSTS #
+    SUMMARY_ALGORITHMS = {"genetic": GeneticSummary,
+                          "las_vegas": LasVegasSummary,
+                          "greedy": GreedySummary,}
+    # END - CONSTS #
+
+    # CHANGEABLE #
+    SUMMARY_ALGORITHM = GreedySummary
+    # END - CHANGEABLE #
 
     def __init__(self):
         pass
@@ -31,10 +43,10 @@ class MultiScoreMultiDatasetExperiment:
             main_save_folder_path: str,
             max_iter: int = 30):
         """
-        Generate multiple tables of: rows -> dataset, columns ->  summary score metrics, divided by summary sizes
+        Generate multiple tables of: _rows -> dataset, columns ->  summary score metrics, divided by summary sizes
         :param datasets: a dict of datasets names (as keys) and pandas' dataframe (as values)
         :param score_metrics: a dict of metric functions object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) where the function name is the key and the function object is the value.
-        :param summaries_sizes: a list of tuples (with 2 elements) - the number of rows and the number of columns
+        :param summaries_sizes: a list of tuples (with 2 elements) - the number of _rows and the number of columns
         :param main_save_folder_path: the folder name where we wish to write the results in
         :param max_iter: the maximum number of iteration we allow to do for one combination of dataset, metric, summary size
         :return: None, save csv files and plots to the folder
@@ -46,7 +58,7 @@ class MultiScoreMultiDatasetExperiment:
             pass
 
         # init tables for aggregated analysis #
-        # prepare rows
+        # prepare _rows
         summary_rows_ids = []
         for summary_size in summaries_sizes:
             for dataset_name in datasets:
@@ -82,28 +94,29 @@ class MultiScoreMultiDatasetExperiment:
                                                                                                       dataset_name,
                                                                                                       metric_name))
                     # run the summary and obtain result and coverage report
-                    summary, converge_report = GreedySummary.run(dataset=dataset,
-                                                                 desired_row_size=desired_row_size,
-                                                                 desired_col_size=desired_col_size,
-                                                                 row_score_function=score_metric_function,
-                                                                 evaluate_score_function=score_metric_function,
-                                                                 is_return_indexes=False,
-                                                                 save_converge_report=os.path.join(
-                                                                     main_save_folder_path,
-                                                                     "converge_report_{}_{}_summary_{}X{}.json".format(
-                                                                         metric_name,
-                                                                         dataset_name,
-                                                                         desired_row_size,
-                                                                         desired_col_size)),
-                                                                 max_iter=max_iter)
+                    summary, converge_report = MultiScoreMultiDatasetExperiment.SUMMARY_ALGORITHM.run(dataset=dataset,
+                                                                                                      desired_row_size=desired_row_size,
+                                                                                                      desired_col_size=desired_col_size,
+                                                                                                      row_score_function=score_metric_function,
+                                                                                                      evaluate_score_function=score_metric_function,
+                                                                                                      is_return_indexes=False,
+                                                                                                      save_converge_report=os.path.join(
+                                                                                                          main_save_folder_path,
+                                                                                                          "converge_report_{}_{}_summary_{}X{}.json".format(
+                                                                                                              metric_name,
+                                                                                                              dataset_name,
+                                                                                                              desired_row_size,
+                                                                                                              desired_col_size)),
+                                                                                                      max_iter=max_iter)
 
                     # generate and save a score of the metric over iterations plot
                     AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
                                                                    cols_scores=converge_report["cols_score"],
                                                                    total_scores=converge_report["total_score"],
+                                                                   y_label="Error function value [1]",
                                                                    save_path=os.path.join(
                                                                        main_save_folder_path,
-                                                                       "greedy_converge_scores_{}_{}_summary_{}X{}.png".format(
+                                                                       "converge_scores_{}_{}_summary_{}X{}.png".format(
                                                                            metric_name,
                                                                            dataset_name,
                                                                            desired_row_size,
@@ -224,13 +237,22 @@ class MultiScoreMultiDatasetExperiment:
 def prepare_dataset(df):
     # remove what we do not need
     df.drop([col for col in list(df) if not is_numeric_dtype(df[col])], axis=1, inplace=True)
-    # remove rows with nan
+    # remove _rows with nan
     df.dropna(inplace=True)
-    # get only max number of rows to work with
+    # get only max number of _rows to work with
     return df.iloc[:200, :]
 
 
-def run_test():
+def run_test_multiple_summary_algorithms():
+    # run over all the algorithms in the list
+    for algo_name, summary_algo in MultiScoreMultiDatasetExperiment.SUMMARY_ALGORITHMS.items():
+        # set the right algorithm
+        MultiScoreMultiDatasetExperiment.SUMMARY_ALGORITHM = summary_algo
+        # run and save the results in a new inner folder
+        run_test(inner_result_folder="multi_db_multi_metric_initial_results_{}".format(algo_name))
+
+
+def run_test(inner_result_folder: str = "multi_db_multi_metric_initial_results"):
     # load and prepare datasets
     datasets = {os.path.basename(path): prepare_dataset(pd.read_csv(path))
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
@@ -243,9 +265,9 @@ def run_test():
                                              "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr
                                          },
                                          summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
-                                         main_save_folder_path=os.path.join(os.path.dirname(__file__), "results"),
+                                         main_save_folder_path=os.path.join(os.path.dirname(__file__), inner_result_folder),
                                          max_iter=30)
 
 
 if __name__ == '__main__':
-    run_test()
+    run_test_multiple_summary_algorithms()
