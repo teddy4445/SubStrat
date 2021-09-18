@@ -3,15 +3,16 @@ import json
 import time
 import random
 import pandas as pd
+from itertools import combinations
 
 # project import
 from ds.converge_report import ConvergeReport
 from summary_algorithms.base_summary_algorithm import BaseSummary
 
 
-class LasVegasSummary(BaseSummary):
+class BruteForceSummary(BaseSummary):
     """
-    This class is a Las Vegas type algorithm for dataset summarization
+    This class is a brute-force type algorithm for dataset summarization
     """
 
     def __init__(self):
@@ -52,41 +53,47 @@ class LasVegasSummary(BaseSummary):
         best_rows = []
         best_columns = []
 
-        while round_count < max_iter:
-            # pick _rows
-            start_rows_calc = time.time()  # just for time measurement tasks
-            current_rows = LasVegasSummary._pick_random_set(pick_range=dataset.shape[0],
-                                                            pick_size=desired_row_size)
-            end_rows_calc = time.time()  # just for time measurement tasks
+        # all size of rows and columns to pick from
+        pick_rows = list(range(dataset.shape[0]))  # all _rows
+        pick_columns = list(range(dataset.shape[1]))  # all columns
 
-            # optimize over the columns
-            start_cols_calc = time.time()  # just for time measurement tasks
-            current_columns = LasVegasSummary._pick_random_set(pick_range=dataset.shape[1],
-                                                               pick_size=desired_col_size)
-            end_cols_calc = time.time()  # just for time measurement tasks
+        for row_index, current_rows in enumerate(combinations(pick_rows, desired_row_size)):
+            for col_index, current_columns in enumerate(combinations(pick_columns, desired_col_size)):
+                print("Working in row combination = {} and col combination = {}".format(row_index, col_index))
 
-            # compute scores
-            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, :])
-            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, current_columns])
-            total_score = evaluate_score_function(dataset, dataset.iloc[current_rows, current_columns])
+                # pick _rows
+                start_rows_calc = time.time()  # just for time measurement tasks
+                start_cols_calc = time.time()  # just for time measurement tasks
 
-            # Add the data for the report
-            converge_report.add_step(row=current_rows,
-                                     col=current_columns,
-                                     row_score=rows_summary_score,
-                                     col_score=cols_summary_score,
-                                     row_calc_time=(end_rows_calc - start_rows_calc),
-                                     col_calc_time=(end_cols_calc - start_cols_calc),
-                                     total_score=total_score)
+                # convert from set to list
+                current_rows = sorted(list(current_rows))
+                current_columns = sorted(list(current_columns))
 
-            # check we this summary is better
-            if total_score < best_score:
-                best_score = total_score
-                best_rows = current_rows
-                best_columns = current_columns
+                # compute scores
+                rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, :])
+                cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, current_columns])
+                total_score = evaluate_score_function(dataset, dataset.iloc[current_rows, current_columns])
 
-            # count this step
-            round_count += 1
+                end_rows_calc = time.time()  # just for time measurement tasks
+                end_cols_calc = time.time()  # just for time measurement tasks
+
+                # Add the data for the report
+                converge_report.add_step(row=current_rows,
+                                         col=current_columns,
+                                         row_score=rows_summary_score,
+                                         col_score=cols_summary_score,
+                                         row_calc_time=(end_rows_calc - start_rows_calc) / 2,
+                                         col_calc_time=(end_cols_calc - start_cols_calc) / 2,
+                                         total_score=total_score)
+
+                # check we this summary is better
+                if total_score < best_score:
+                    best_score = total_score
+                    best_rows = current_rows
+                    best_columns = current_columns
+
+                # count this step
+                round_count += 1
 
         # if requested, save the converge report
         if save_converge_report != "":
@@ -96,15 +103,3 @@ class LasVegasSummary(BaseSummary):
         if is_return_indexes:
             return best_rows, best_columns, converge_report
         return dataset.iloc[best_rows, best_columns], converge_report
-
-    @staticmethod
-    def _pick_random_set(pick_range: int,
-                         pick_size: int):
-        """
-        Pick unique set out of a pick range in size 'pick_size'
-        """
-        pick_range_set = range(pick_range)
-        answer = set()
-        while len(answer) < pick_size:
-            answer.add(random.choice(pick_range_set))
-        return sorted(list(answer))

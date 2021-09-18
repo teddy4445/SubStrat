@@ -40,9 +40,9 @@ class AnalysisConvergeProcess:
         plt.close()
 
     @staticmethod
-    def iou_greedy_converge(rows_list: list,
-                            cols_list: list,
-                            save_path: str):
+    def iou_converge(rows_list: list,
+                     cols_list: list,
+                     save_path: str):
         """
         Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
         :param rows_list: list of list of _rows indexes from the summary algorithm
@@ -74,12 +74,12 @@ class AnalysisConvergeProcess:
         plt.close()
 
     @staticmethod
-    def greedy_converge_scores(rows_scores: list,
-                               cols_scores: list,
-                               total_scores: list,
-                               save_path: str,
-                               y_label: str = "Greedy algorithm's scoring function's score [1]",
-                               x_label: str = "Algorithmic step [1]"):
+    def converge_scores(rows_scores: list,
+                        cols_scores: list,
+                        total_scores: list,
+                        save_path: str,
+                        y_label: str = "Greedy algorithm's scoring function's score [1]",
+                        x_label: str = "Algorithmic step [1]"):
         """
         Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
         :param rows_scores: list of scores from the algorithms converge process for the _rows
@@ -118,10 +118,10 @@ class AnalysisConvergeProcess:
         plt.close()
 
     @staticmethod
-    def greedy_converge_times(rows_compute_time: list,
-                              cols_compute_time: list,
-                              save_path: str,
-                              save_cumsum: bool = True):
+    def converge_times(rows_compute_time: list,
+                       cols_compute_time: list,
+                       save_path: str,
+                       save_cumsum: bool = True):
         """
         Plot a scatter plot of the changes in the summary _rows and _cols with the IOU metric over the process
         :param rows_compute_time: list of commuting time in second from the algorithms converge process for the _rows
@@ -160,10 +160,10 @@ class AnalysisConvergeProcess:
 
         # collective time over algorithms, if requested
         if save_cumsum:
-            return AnalysisConvergeProcess.greedy_converge_times(rows_compute_time=np.cumsum(rows_compute_time),
-                                                                 cols_compute_time=np.cumsum(cols_compute_time),
-                                                                 save_cumsum=False,
-                                                                 save_path=save_path.replace(".png", "_cumsum.png"))
+            return AnalysisConvergeProcess.converge_times(rows_compute_time=np.cumsum(rows_compute_time),
+                                                          cols_compute_time=np.cumsum(cols_compute_time),
+                                                          save_cumsum=False,
+                                                          save_path=save_path.replace(".png", "_cumsum.png"))
 
     @staticmethod
     def picking_summary_video(rows_list: list,

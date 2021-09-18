@@ -13,7 +13,7 @@ from summary_algorithms.ga.gene_population import SummaryGenePopulation, Summary
 
 class GeneticSummary(BaseSummary):
     """
-    This class is a wrapper over the genetic coding summary algorithm
+    This class is a genetic-coding type algorithm for dataset summarization
     """
 
     # SETTINGS #

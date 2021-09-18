@@ -12,7 +12,7 @@ from summary_algorithms.base_summary_algorithm import BaseSummary
 
 class GreedySummary(BaseSummary):
     """
-    This class is a wrapper over the greedy summary algorithm
+    This class is a greedy over the rows and columns type algorithm for dataset summarization
     """
 
     # GLOBAL PARMS #
