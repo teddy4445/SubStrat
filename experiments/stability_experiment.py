@@ -1,5 +1,6 @@
 # library imports
 import os
+import random
 import numpy as np
 import pandas as pd
 from glob import glob
@@ -22,6 +23,7 @@ class StabilityExperiment:
     """
 
     METRIC = SummaryWellnessScores.mean_pearson_corr
+    METRIC_NAME = "mean_pearson_corr"
 
     def __init__(self):
         pass
@@ -31,6 +33,7 @@ class StabilityExperiment:
             algorithms: dict,
             summaries_sizes: list,
             main_save_folder_path: str,
+            noise_function,
             max_iter: int = 30):
         """
         Generate multiple tables of: _rows -> dataset, columns ->  summary score metrics, divided by summary sizes
@@ -38,6 +41,7 @@ class StabilityExperiment:
         :param algorithms: a dict of algorithms one wants to test one vs. the other
         :param summaries_sizes: a list of tuples (with 2 elements) - the number of _rows and the number of columns
         :param main_save_folder_path: the folder name where we wish to write the results in
+        :param noise_function: a noise function to use in the experiment
         :param max_iter: the maximum number of iteration we allow to do for one combination of dataset, metric, summary size
         :return: None, save csv files and plots to the folder
         """
@@ -69,6 +73,7 @@ class StabilityExperiment:
                     summary_table.add(column=dataset_name,
                                       row_id=algo_name,
                                       data_point=StabilityExperiment._stability_test(dataset_name=dataset_name,
+                                                                                     noise_function=noise_function,
                                                                                      algo_name=algo_name,
                                                                                      dataset=df,
                                                                                      summary_row_size=desired_row_size,
@@ -81,7 +86,7 @@ class StabilityExperiment:
                                                                                      save_converge_report=os.path.join(
                                                                                          main_save_folder_path,
                                                                                          "{}_{}_{}_{}X{}.json".format(
-                                                                                             "mean_entropy",
+                                                                                             StabilityExperiment.METRIC_NAME,
                                                                                              algo_name,
                                                                                              dataset_name,
                                                                                              desired_row_size,
@@ -93,6 +98,7 @@ class StabilityExperiment:
 
     @staticmethod
     def _stability_test(dataset_name: str,
+                        noise_function,
                         algo_name: str,
                         dataset: pd.DataFrame,
                         summary_row_size: int,
@@ -104,7 +110,12 @@ class StabilityExperiment:
                         max_iter: int,
                         save_converge_report: str):
         # save path folder
-        inner_folder = "{}_{}_{}X{}".format(dataset_name, algo_name, summary_row_size, summary_col_size)
+        inner_folder = "{}_{}_{}X{}_to_{}X{}".format(dataset_name,
+                                                     algo_name,
+                                                     dataset.shape[0],
+                                                     dataset.shape[1],
+                                                     summary_row_size,
+                                                     summary_col_size)
         try:
             os.mkdir(os.path.join(os.path.dirname(save_converge_report), inner_folder))
         except Exception as error:
@@ -120,8 +131,8 @@ class StabilityExperiment:
 
         scores = []
         for repeat in range(repeats):
-            noised_dataset = StabilityExperiment._add_dataset_gussian_noise(dataset=dataset,
-                                                                            noise=noise)
+            noised_dataset = noise_function(dataset=dataset,
+                                            noise=noise)
             for start_condition in range(start_condition_repeat):
                 print("Dataset '{}' and algo '{}' Repeat {}/{} with start condition repeat {}/{}".format(dataset_name,
                                                                                                          algo_name,
@@ -145,11 +156,11 @@ class StabilityExperiment:
                                                                  max_iter=max_iter)
 
                 # generate and save a score of the metric over iterations plot
-                AnalysisConvergeProcess.greedy_converge_scores(rows_scores=converge_report["rows_score"],
-                                                               cols_scores=converge_report["cols_score"],
-                                                               total_scores=converge_report["total_score"],
-                                                               save_path=save_path.replace(".json", ".png"),
-                                                               y_label="'{}' algorithm's error [1]".format(algo_name))
+                AnalysisConvergeProcess.converge_scores(rows_scores=converge_report["rows_score"],
+                                                        cols_scores=converge_report["cols_score"],
+                                                        total_scores=converge_report["total_score"],
+                                                        save_path=save_path.replace(".json", ".png"),
+                                                        y_label="'{}' algorithm's error [1]".format(algo_name))
                 # calc stability score
                 try:
                     stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary) / StabilityExperiment.METRIC(dataset=dataset, summary=noised_dataset))
@@ -160,9 +171,28 @@ class StabilityExperiment:
         return "{} \\pm {}".format(np.nanmean(scores), np.nanstd(scores))
 
     @staticmethod
-    def _add_dataset_gussian_noise(dataset: pd.DataFrame,
-                                   noise: float) -> pd.DataFrame:
+    def _add_dataset_gaussian_noise(dataset: pd.DataFrame,
+                                    noise: float) -> pd.DataFrame:
+        """
+        A noise function that takes the dataset and adds to each value a Gaussian noise with a given STD = noise
+        :param dataset: The dataset we want to add noise on
+        :param noise: the noise hyper-parameter
+        :return: noisy dataframe as Pandas' DataFrame
+        """
         return dataset + np.random.normal(0, noise, [dataset.shape[0], dataset.shape[1]])
+
+    @staticmethod
+    def _add_dataset_subset_pick_noise(dataset: pd.DataFrame,
+                                       noise: float) -> pd.DataFrame:
+        """
+        A noise function that takes a random subset of size (1-noise) from the original dataset for both the rows and columns
+        :param dataset: The dataset we want to add noise on
+        :param noise: the noise hyper-parameter
+        :return: noisy dataframe as Pandas' DataFrame
+        """
+        row_indexes = list(range(dataset.shape[0]))
+        col_indexes = list(range(dataset.shape[1]))
+        return dataset.iloc[random.sample(row_indexes, round((1-noise) * len(row_indexes))), random.sample(col_indexes, round((1-noise) * len(col_indexes)))]
 
 
 def prepare_dataset(df):
@@ -180,6 +210,7 @@ def run_test():
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     StabilityExperiment.run(datasets=datasets,
+                            noise_function=StabilityExperiment._add_dataset_subset_pick_noise,
                             algorithms={
                                 "las_vegas": LasVegasSummary,
                                 "greedy": GreedySummary,

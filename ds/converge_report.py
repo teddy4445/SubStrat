@@ -61,6 +61,10 @@ class ConvergeReport:
             "total_score": self.total_score
         }
 
+    def total_time(self,
+                   index: int):
+        return self.rows_calc_time[index] + self.cols_calc_time[index]
+
     def step_get(self,
                  key: str,
                  index: int):
