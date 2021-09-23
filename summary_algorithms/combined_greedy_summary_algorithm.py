@@ -10,9 +10,10 @@ from ds.converge_report import ConvergeReport
 from summary_algorithms.base_summary_algorithm import BaseSummary
 
 
-class GreedySummary(BaseSummary):
+class CombinedGreedySummary(BaseSummary):
     """
-    This class is a greedy over the rows and columns type algorithm for dataset summarization
+    This class is a greedy over the rows and columns in the same time type algorithm for dataset summarization.
+    It extends logically the "GreedySummary" algorithm by picking both rows and columns in the same greedy loop
     """
 
     # GLOBAL PARMS #
@@ -51,8 +52,6 @@ class GreedySummary(BaseSummary):
         old_pick_columns = []
         pick_rows = list(range(dataset.shape[0]))  # all _rows
         pick_columns = list(range(dataset.shape[1]))  # all columns
-        # calc once the transpose of the dataset (matrix) for the second step in each iteration
-        dataset_transposed = dataset.transpose()
 
         # when no other swap is taken place, this is the equilibrium and we can stop searching
         # Note: we introduce the "max_iter" stop condition in order stop the run after enough steps
@@ -63,22 +62,12 @@ class GreedySummary(BaseSummary):
 
             # optimize over the _rows
             start_rows_calc = time.time()  # just for time measurement tasks
-            if desired_col_size < dataset.shape[0]:
-                pick_rows = GreedySummary._greedy_row_summary(dataset=dataset.iloc[:, old_pick_columns],
-                                                              desired_row_size=desired_row_size,
-                                                              score_function=evaluate_score_function)
-            else:
-                pick_rows = list(range(dataset.shape[0]))
-            end_rows_calc = time.time()  # just for time measurement tasks
-
-            # optimize over the columns
             start_cols_calc = time.time()  # just for time measurement tasks
-            if desired_col_size < dataset.shape[1]:
-                pick_columns = GreedySummary._greedy_row_summary(dataset=dataset_transposed.iloc[:, old_pick_rows],
-                                                                 desired_row_size=desired_col_size,
-                                                                 score_function=evaluate_score_function)
-            else:
-                pick_columns = list(range(dataset.shape[1]))
+            pick_rows, pick_cols = CombinedGreedySummary._greedy_row_col_summary(dataset=dataset.iloc[:, old_pick_columns],
+                                                                                 desired_row_size=desired_row_size,
+                                                                                 desired_col_size=desired_col_size,
+                                                                                 score_function=evaluate_score_function)
+            end_rows_calc = time.time()  # just for time measurement tasks
             end_cols_calc = time.time()  # just for time measurement tasks
 
             # sort the indexes - just for easy review later
@@ -95,7 +84,7 @@ class GreedySummary(BaseSummary):
                                      total_score=evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
 
             # in order to prevent loops, once found, we want to jump to other, random start condition
-            if GreedySummary.PREVENT_LOOP and round_count >= 2:
+            if CombinedGreedySummary.PREVENT_LOOP and round_count >= 2:
                 for previous_step in range(round_count - 1):
                     if pick_rows == converge_report.step_get("_rows", previous_step) and pick_columns == converge_report.step_get("_cols", previous_step):
                         # pick randomly new start
@@ -137,23 +126,28 @@ class GreedySummary(BaseSummary):
         return dataset.iloc[pick_rows, pick_columns], converge_report
 
     @staticmethod
-    def _greedy_row_summary(dataset: pd.DataFrame,
-                            desired_row_size: int,
-                            score_function):
+    def _greedy_row_col_summary(dataset: pd.DataFrame,
+                                desired_row_size: int,
+                                desired_col_size: int,
+                                score_function):
         """
         The greedy algorithm for only the _rows (columns when transposed matrix)
         :param dataset: the dataset we work on (pandas' dataframe)
         :param desired_row_size: the size of the summary as the number of _rows (int)
+        :param desired_col_size: the size of the summary as the number of _cols (int)
         :param score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe)
                                 and give a score (float) to the summary
         """
         # find all the _rows indexes
         all_rows_indexes = set(list(range(dataset.shape[0])))
+        # find all the _cols indexes
+        all_cols_indexes = set(list(range(dataset.shape[1])))
         # init vars
         sample_rows_indexes = []
-        best_scores = []
+        sample_cols_indexes = []
+
         # run until we have the desired number of _rows in the summary
-        for i in range(desired_row_size):
+        for i in range(min(desired_row_size, desired_col_size)):
             # init to max to replace in the first time
             best_new_row_index = -1
             best_new_row_score = float("inf")
@@ -161,17 +155,83 @@ class GreedySummary(BaseSummary):
             search_rows_indexes = all_rows_indexes - set(sample_rows_indexes)
             # run over all relevant _rows and calc the score
             for check_row_index in search_rows_indexes:
-                check_summary = sample_rows_indexes.copy()
-                check_summary.append(check_row_index)
-                check_summary_score = score_function(dataset=dataset,
-                                                     summary=dataset.iloc[check_summary, :])
+                check_row_summary = sample_rows_indexes.copy()
+                check_row_summary.append(check_row_index)
+                if len(sample_cols_indexes) > 0:
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[check_row_summary, sample_cols_indexes])
+                else:
+
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[check_row_summary, :])
                 # if better score, we want this row to add
                 if check_summary_score < best_new_row_score:
                     best_new_row_score = check_summary_score
                     best_new_row_index = check_row_index
             # add the best row to the summary and recall the best score for the converge report later
             sample_rows_indexes.append(best_new_row_index)
-            best_scores.append(best_new_row_score)
+
+            # init to max to replace in the first time
+            best_new_col_index = -1
+            best_new_col_score = float("inf")
+            # get only the relevant _rows
+            search_cols_indexes = all_cols_indexes - set(all_cols_indexes)
+            # run over all relevant _rows and calc the score
+            for check_col_index in search_cols_indexes:
+                check_col_summary = sample_cols_indexes.copy()
+                check_col_summary.append(check_col_index)
+                if len(sample_cols_indexes) > 0:
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[sample_rows_indexes, check_col_summary])
+                else:
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[:, check_col_summary])
+                # if better score, we want this row to add
+                if check_summary_score < best_new_col_score:
+                    best_new_col_score = check_summary_score
+                    best_new_col_index = check_col_index
+            # add the best row to the summary and recall the best score for the converge report later
+            sample_cols_indexes.append(best_new_col_index)
+
+        # run on the remaining set
+        if desired_row_size > desired_col_size:
+            for i in range(desired_row_size-desired_col_size):
+                # init to max to replace in the first time
+                best_new_row_index = -1
+                best_new_row_score = float("inf")
+                # get only the relevant _rows
+                search_rows_indexes = all_rows_indexes - set(sample_rows_indexes)
+                # run over all relevant _rows and calc the score
+                for check_row_index in search_rows_indexes:
+                    check_summary = sample_rows_indexes.copy()
+                    check_summary.append(check_row_index)
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[check_summary, sample_cols_indexes])
+                    # if better score, we want this row to add
+                    if check_summary_score < best_new_row_score:
+                        best_new_row_score = check_summary_score
+                        best_new_row_index = check_row_index
+                # add the best row to the summary and recall the best score for the converge report later
+                sample_rows_indexes.append(best_new_row_index)
+        else:
+            for i in range(desired_col_size-desired_row_size):
+                # init to max to replace in the first time
+                best_new_col_index = -1
+                best_new_col_score = float("inf")
+                # get only the relevant _rows
+                search_cols_indexes = all_cols_indexes - set(sample_cols_indexes)
+                # run over all relevant _rows and calc the score
+                for check_row_index in search_cols_indexes:
+                    check_col_summary = sample_rows_indexes.copy()
+                    check_col_summary.append(check_row_index)
+                    check_summary_score = score_function(dataset=dataset,
+                                                         summary=dataset.iloc[sample_rows_indexes, check_col_summary])
+                    # if better score, we want this row to add
+                    if check_summary_score < best_new_col_score:
+                        best_new_col_score = check_summary_score
+                        best_new_col_index = check_row_index
+                # add the best row to the summary and recall the best score for the converge report later
+                sample_rows_indexes.append(best_new_col_index)
 
         # return answers
-        return sample_rows_indexes
+        return sample_rows_indexes, sample_cols_indexes

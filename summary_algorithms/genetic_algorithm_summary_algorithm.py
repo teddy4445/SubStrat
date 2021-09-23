@@ -31,7 +31,6 @@ class GeneticSummary(BaseSummary):
             desired_col_size: int,
             evaluate_score_function,
             save_converge_report: str = "",
-            row_score_function = None,
             is_return_indexes: bool = False,
             max_iter: int = -1):
         """
@@ -39,7 +38,6 @@ class GeneticSummary(BaseSummary):
         :param dataset: the dataset we work on (pandas' dataframe)
         :param desired_row_size: the size of the summary as the number of _rows (int)
         :param desired_col_size: the size of the summary as the number of columns (int)
-        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
         :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
         :param is_return_indexes:  boolean flag to return summary's _rows indexes of after applying to the dataset itself
@@ -68,6 +66,10 @@ class GeneticSummary(BaseSummary):
                                                                   summary_cols=desired_col_size,
                                                                   population_size=GeneticSummary.POPULATION_SIZE)
 
+        # for metric eval
+        old_pick_rows = list(range(dataset.shape[0]))
+        old_pick_columns = list(range(dataset.shape[1]))
+
         while round_count <= max_iter:
             # optimize over the columns and rows
             start_rows_calc = time.time()  # just for time measurement tasks
@@ -82,8 +84,8 @@ class GeneticSummary(BaseSummary):
             end_cols_calc = time.time()  # just for time measurement tasks
 
             # compute scores
-            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[best_gene.get_rows(), :])
-            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, best_gene.get_columns()])
+            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[best_gene.get_rows(), old_pick_columns])
+            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[old_pick_rows, best_gene.get_columns()])
             total_score = evaluate_score_function(dataset, dataset.iloc[best_gene.get_rows(), best_gene.get_columns()])
 
             # Add the data for the report
@@ -103,6 +105,10 @@ class GeneticSummary(BaseSummary):
 
             # count this step
             round_count += 1
+
+            # recall last step's _rows and columns indexes
+            old_pick_rows = best_gene.get_rows().copy()
+            old_pick_columns = best_gene.get_columns().copy()
 
         # if requested, save the converge report
         if save_converge_report != "":

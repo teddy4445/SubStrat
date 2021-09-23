@@ -12,7 +12,6 @@ from ds.table import Table
 from ds.converge_report import ConvergeReport
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
 from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
-from methods.summary_process_score_functions import SummaryProcessScoreFunctions
 from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 from methods.summary_wellness_scores import SummaryWellnessScores
 from plots.analysis_converge_process import AnalysisConvergeProcess

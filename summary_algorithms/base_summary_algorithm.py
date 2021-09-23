@@ -16,7 +16,6 @@ class BaseSummary:
             desired_col_size: int,
             evaluate_score_function,
             save_converge_report: str = "",
-            row_score_function = None,
             is_return_indexes: bool = False,
             max_iter: int = -1) -> pd.DataFrame:
         """
@@ -24,7 +23,6 @@ class BaseSummary:
         :param dataset: the dataset we work on (pandas' dataframe)
         :param desired_row_size: the size of the summary as the number of _rows (int)
         :param desired_col_size: the size of the summary as the number of columns (int)
-        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
         :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
         :param is_return_indexes:  boolean flag to return summary's _rows indexes of after applying to the dataset itself

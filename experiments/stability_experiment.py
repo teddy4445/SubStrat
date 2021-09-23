@@ -14,7 +14,6 @@ from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
 from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 from methods.summary_wellness_scores import SummaryWellnessScores
 from plots.analysis_converge_process import AnalysisConvergeProcess
-from methods.summary_process_score_functions import SummaryProcessScoreFunctions
 
 
 class StabilityExperiment:
@@ -210,11 +209,11 @@ def run_test():
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     StabilityExperiment.run(datasets=datasets,
-                            noise_function=StabilityExperiment._add_dataset_subset_pick_noise,
+                            noise_function=StabilityExperiment._add_dataset_gaussian_noise,
                             algorithms={
                                 "las_vegas": LasVegasSummary,
                                 "greedy": GreedySummary,
-                                "genetic": GeneticSummary,
+                                #"genetic": GeneticSummary,
                             },
                             summaries_sizes=[(10, 0), (20, 0), (30, 0)],
                             main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),

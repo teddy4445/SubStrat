@@ -9,6 +9,7 @@ from ds.converge_report import ConvergeReport
 from methods.summary_wellness_scores import SummaryWellnessScores
 from plots.analysis_converge_process import AnalysisConvergeProcess
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
+from summary_algorithms.combined_greedy_summary_algorithm import CombinedGreedySummary
 from summary_algorithms.brute_force_summary_algorithm import BruteForceSummary
 
 
@@ -18,9 +19,11 @@ class Main:
     This is used as a first attempt on the algorithm
     """
 
+    SUMMARY_ALGORITHM = CombinedGreedySummary
+    SUMMARY_ALGORITHM_NAME = "CombinedGreedySummary"
+    """
     SUMMARY_ALGORITHM = BruteForceSummary
     SUMMARY_ALGORITHM_NAME = "Brute-force"
-    """
     SUMMARY_ALGORITHM = GreedySummary
     SUMMARY_ALGORITHM_NAME = "greedy"
     """
@@ -144,7 +147,6 @@ class Main:
         return Main.SUMMARY_ALGORITHM.run(dataset=data,
                                           desired_row_size=desired_row_size,
                                           desired_col_size=desired_col_size,
-                                          row_score_function=SummaryWellnessScores.mean_entropy,
                                           evaluate_score_function=SummaryWellnessScores.mean_entropy,
                                           is_return_indexes=False,
                                           save_converge_report=Main.SUMMARY_REPORT_FILE_PATH,
@@ -192,7 +194,7 @@ class Main:
 
 
 if __name__ == '__main__':
-    row_size = 7
+    row_size = 100
     col_size = 7
 
     print("Starting to work on size: {}X{}".format(row_size, col_size))
@@ -200,7 +202,7 @@ if __name__ == '__main__':
              data_row_working_size=row_size,
              data_col_working_size=col_size,
              data_rows_name_to_delete=[],  # ["id", "target", "genus"],
-             desired_row_size=2,
-             desired_col_size=2,
+             desired_row_size=10,
+             desired_col_size=5,
              result_file_path=os.path.join(os.path.dirname(__file__), Main.RESULTS_FOLDER_NAME,
                                            "summary_{}.csv".format(datetime.now().strftime(Main.FILE_TIME_FORMAT))))

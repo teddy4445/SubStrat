@@ -23,7 +23,6 @@ class LasVegasSummary(BaseSummary):
             desired_col_size: int,
             evaluate_score_function,
             save_converge_report: str = "",
-            row_score_function = None,
             is_return_indexes: bool = False,
             max_iter: int = -1):
         """
@@ -31,7 +30,6 @@ class LasVegasSummary(BaseSummary):
         :param dataset: the dataset we work on (pandas' dataframe)
         :param desired_row_size: the size of the summary as the number of _rows (int)
         :param desired_col_size: the size of the summary as the number of columns (int)
-        :param row_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give the score of row\column optimization process
         :param evaluate_score_function: a function object getting dataset (pandas' dataframe) and summary (pandas' dataframe) and give a score (float) to the entire summary
         :param save_converge_report: a path to write the converge report to (default - do not write)
         :param is_return_indexes:  boolean flag to return summary's _rows indexes of after applying to the dataset itself
@@ -52,6 +50,10 @@ class LasVegasSummary(BaseSummary):
         best_rows = []
         best_columns = []
 
+        # for metric eval
+        old_pick_rows = list(range(dataset.shape[0]))
+        old_pick_columns = list(range(dataset.shape[1]))
+
         while round_count < max_iter:
             # pick _rows
             start_rows_calc = time.time()  # just for time measurement tasks
@@ -66,8 +68,8 @@ class LasVegasSummary(BaseSummary):
             end_cols_calc = time.time()  # just for time measurement tasks
 
             # compute scores
-            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, :])
-            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, current_columns])
+            rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, old_pick_columns])
+            cols_summary_score = evaluate_score_function(dataset, dataset.iloc[old_pick_rows, current_columns])
             total_score = evaluate_score_function(dataset, dataset.iloc[current_rows, current_columns])
 
             # Add the data for the report
@@ -88,6 +90,10 @@ class LasVegasSummary(BaseSummary):
             # count this step
             round_count += 1
 
+            # recall last step's _rows and columns indexes
+            old_pick_rows = current_rows.copy()
+            old_pick_columns = current_columns.copy()
+
         # if requested, save the converge report
         if save_converge_report != "":
             json.dump(converge_report.to_dict(), open(save_converge_report, "w"), indent=2)
@@ -103,6 +109,10 @@ class LasVegasSummary(BaseSummary):
         """
         Pick unique set out of a pick range in size 'pick_size'
         """
+        # edge case for picking the entire size
+        if pick_size == pick_range:
+            return list(range(pick_range))
+
         pick_range_set = range(pick_range)
         answer = set()
         while len(answer) < pick_size:

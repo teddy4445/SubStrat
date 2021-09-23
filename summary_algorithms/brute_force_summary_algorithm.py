@@ -54,11 +54,14 @@ class BruteForceSummary(BaseSummary):
         best_columns = []
 
         # all size of rows and columns to pick from
+        old_pick_rows = list(range(dataset.shape[0]))
+        old_pick_columns = list(range(dataset.shape[1]))
         pick_rows = list(range(dataset.shape[0]))  # all _rows
         pick_columns = list(range(dataset.shape[1]))  # all columns
 
         for row_index, current_rows in enumerate(combinations(pick_rows, desired_row_size)):
             for col_index, current_columns in enumerate(combinations(pick_columns, desired_col_size)):
+
                 print("Working in row combination = {} and col combination = {}".format(row_index, col_index))
 
                 # pick _rows
@@ -70,8 +73,8 @@ class BruteForceSummary(BaseSummary):
                 current_columns = sorted(list(current_columns))
 
                 # compute scores
-                rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, :])
-                cols_summary_score = evaluate_score_function(dataset, dataset.iloc[:, current_columns])
+                rows_summary_score = evaluate_score_function(dataset, dataset.iloc[current_rows, old_pick_columns])
+                cols_summary_score = evaluate_score_function(dataset, dataset.iloc[old_pick_rows, current_columns])
                 total_score = evaluate_score_function(dataset, dataset.iloc[current_rows, current_columns])
 
                 end_rows_calc = time.time()  # just for time measurement tasks
@@ -94,6 +97,10 @@ class BruteForceSummary(BaseSummary):
 
                 # count this step
                 round_count += 1
+
+                # recall last step's _rows and columns indexes
+                old_pick_rows = pick_rows.copy()
+                old_pick_columns = pick_columns.copy()
 
         # if requested, save the converge report
         if save_converge_report != "":
