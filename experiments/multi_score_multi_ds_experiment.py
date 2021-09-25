@@ -10,11 +10,12 @@ from pandas.core.dtypes.common import is_numeric_dtype
 # project imports
 from ds.table import Table
 from ds.converge_report import ConvergeReport
+from methods.summary_wellness_scores import SummaryWellnessScores
+from plots.analysis_converge_process import AnalysisConvergeProcess
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
 from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
 from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
-from methods.summary_wellness_scores import SummaryWellnessScores
-from plots.analysis_converge_process import AnalysisConvergeProcess
+from summary_algorithms.combined_greedy_summary_algorithm import CombinedGreedySummary
 
 
 class MultiScoreMultiDatasetExperiment:
@@ -25,7 +26,8 @@ class MultiScoreMultiDatasetExperiment:
     # CONSTS #
     SUMMARY_ALGORITHMS = {"genetic": GeneticSummary,
                           "las_vegas": LasVegasSummary,
-                          "greedy": GreedySummary, }
+                          "greedy": GreedySummary,
+                          "combined_greedy": CombinedGreedySummary}
     # END - CONSTS #
 
     # CHANGEABLE #
@@ -103,7 +105,6 @@ class MultiScoreMultiDatasetExperiment:
                     summary, converge_report = MultiScoreMultiDatasetExperiment.SUMMARY_ALGORITHM.run(dataset=dataset,
                                                                                                       desired_row_size=desired_row_size,
                                                                                                       desired_col_size=desired_col_size,
-                                                                                                      row_score_function=score_metric_function,
                                                                                                       evaluate_score_function=score_metric_function,
                                                                                                       is_return_indexes=False,
                                                                                                       save_converge_report=os.path.join(
@@ -280,7 +281,10 @@ def prepare_dataset(df):
     # remove _rows with nan
     df.dropna(inplace=True)
     # get only max number of _rows to work with
-    return df.iloc[:200, :]
+    if df.shape[1] > 10:
+        return df.iloc[:200, 1:15]
+    else:
+        return df.iloc[:200, :]
 
 
 def run_test_multiple_summary_algorithms():

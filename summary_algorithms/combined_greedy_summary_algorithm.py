@@ -63,7 +63,7 @@ class CombinedGreedySummary(BaseSummary):
             # optimize over the _rows
             start_rows_calc = time.time()  # just for time measurement tasks
             start_cols_calc = time.time()  # just for time measurement tasks
-            pick_rows, pick_cols = CombinedGreedySummary._greedy_row_col_summary(dataset=dataset.iloc[:, old_pick_columns],
+            pick_rows, pick_cols = CombinedGreedySummary._greedy_row_col_summary(dataset=dataset.iloc[old_pick_rows, old_pick_columns],
                                                                                  desired_row_size=desired_row_size,
                                                                                  desired_col_size=desired_col_size,
                                                                                  score_function=evaluate_score_function)
@@ -94,7 +94,7 @@ class CombinedGreedySummary(BaseSummary):
                             if new_value not in pick_rows:
                                 pick_rows.append(new_value)
                         pick_columns = []
-                        while len(pick_rows) < desired_col_size:
+                        while len(pick_columns) < desired_col_size:
                             new_value = random.choice(list(range(dataset.shape[1])))
                             if new_value not in pick_rows:
                                 pick_columns.append(new_value)
@@ -161,7 +161,6 @@ class CombinedGreedySummary(BaseSummary):
                     check_summary_score = score_function(dataset=dataset,
                                                          summary=dataset.iloc[check_row_summary, sample_cols_indexes])
                 else:
-
                     check_summary_score = score_function(dataset=dataset,
                                                          summary=dataset.iloc[check_row_summary, :])
                 # if better score, we want this row to add
@@ -175,7 +174,7 @@ class CombinedGreedySummary(BaseSummary):
             best_new_col_index = -1
             best_new_col_score = float("inf")
             # get only the relevant _rows
-            search_cols_indexes = all_cols_indexes - set(all_cols_indexes)
+            search_cols_indexes = all_cols_indexes - set(sample_cols_indexes)
             # run over all relevant _rows and calc the score
             for check_col_index in search_cols_indexes:
                 check_col_summary = sample_cols_indexes.copy()

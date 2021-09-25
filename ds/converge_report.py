@@ -102,3 +102,8 @@ class ConvergeReport:
 
     # end - smart get functions #
 
+    def __repr__(self):
+        return "<ConvergeReport: {} steps>".format(len(self.rows))
+
+    def __str__(self):
+        return self.to_dict().__str__()

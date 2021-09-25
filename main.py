@@ -129,6 +129,8 @@ class Main:
         df = pd.read_csv(data_file_path)
         # remove unwanted columns
         df.drop(data_rows_name_to_delete, axis=1, inplace=True)
+        # remove nans
+        df.dropna(inplace=True)
         # down sample the dataset so we can work with - take the first _rows (random decision, can be changes later)
         df = df.iloc[:data_row_working_size, :data_col_working_size]
         return df
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     col_size = 7
 
     print("Starting to work on size: {}X{}".format(row_size, col_size))
-    Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "dataset_5_page-blocks.csv"),
+    Main.run(data_file_path=os.path.join(os.path.dirname(__file__), "data", "dataset_3_liver-disorders.csv"),
              data_row_working_size=row_size,
              data_col_working_size=col_size,
              data_rows_name_to_delete=[],  # ["id", "target", "genus"],
