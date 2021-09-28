@@ -9,26 +9,32 @@ from pandas.core.dtypes.common import is_numeric_dtype
 # project imports
 from ds.table import Table
 from ds.converge_report import ConvergeReport
+from methods.summary_wellness_scores import SummaryWellnessScores
+from plots.analysis_converge_process import AnalysisConvergeProcess
 from summary_algorithms.greedy_summary_algorithm import GreedySummary
 from summary_algorithms.las_vegas_summary_algorithm import LasVegasSummary
 from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
-from methods.summary_wellness_scores import SummaryWellnessScores
-from plots.analysis_converge_process import AnalysisConvergeProcess
+from summary_algorithms.combined_greedy_summary_algorithm import CombinedGreedySummary
 
 
 class StabilityExperiment:
     """
     This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes
     """
-
-    METRIC = SummaryWellnessScores.mean_pearson_corr
-    METRIC_NAME = "mean_pearson_corr"
+    METRICS = {
+        "mean_entropy": SummaryWellnessScores.mean_entropy,
+        "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
+        "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
+        "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr
+    }
 
     def __init__(self):
         pass
 
     @staticmethod
     def run(datasets: dict,
+            metric_name: str,
+            metric,
             algorithms: dict,
             summaries_sizes: list,
             main_save_folder_path: str,
@@ -37,6 +43,8 @@ class StabilityExperiment:
         """
         Generate multiple tables of: _rows -> dataset, columns ->  summary score metrics, divided by summary sizes
         :param datasets: a dict of datasets names (as keys) and pandas' dataframe (as values)
+        :param metric_name: a name of the metric used for this analysis
+        :param metric: the metric function to evaluate the summary's quality
         :param algorithms: a dict of algorithms one wants to test one vs. the other
         :param summaries_sizes: a list of tuples (with 2 elements) - the number of _rows and the number of columns
         :param main_save_folder_path: the folder name where we wish to write the results in
@@ -68,11 +76,11 @@ class StabilityExperiment:
 
                 # run over all the algorithms
                 for algo_name, algo in algorithms.items():
-
                     summary_table.add(column=dataset_name,
                                       row_id=algo_name,
                                       data_point=StabilityExperiment._stability_test(dataset_name=dataset_name,
                                                                                      noise_function=noise_function,
+                                                                                     metric=metric,
                                                                                      algo_name=algo_name,
                                                                                      dataset=df,
                                                                                      summary_row_size=desired_row_size,
@@ -85,12 +93,12 @@ class StabilityExperiment:
                                                                                      save_converge_report=os.path.join(
                                                                                          main_save_folder_path,
                                                                                          "{}_{}_{}_{}X{}.json".format(
-                                                                                             StabilityExperiment.METRIC_NAME,
+                                                                                             metric_name,
                                                                                              algo_name,
                                                                                              dataset_name,
                                                                                              desired_row_size,
                                                                                              desired_col_size))))
-
+            # save results to a summary table
             summary_table.to_csv(save_path=os.path.join(main_save_folder_path,
                                                         "summary_table_{}X{}.csv".format(desired_row_size,
                                                                                          desired_col_size)))
@@ -98,6 +106,7 @@ class StabilityExperiment:
     @staticmethod
     def _stability_test(dataset_name: str,
                         noise_function,
+                        metric,
                         algo_name: str,
                         dataset: pd.DataFrame,
                         summary_row_size: int,
@@ -123,7 +132,7 @@ class StabilityExperiment:
         base_line_summary, converge_report = summary_algorithm.run(dataset=dataset,
                                                                    desired_row_size=summary_row_size,
                                                                    desired_col_size=summary_col_size,
-                                                                   evaluate_score_function=StabilityExperiment.METRIC,
+                                                                   evaluate_score_function=metric,
                                                                    is_return_indexes=False,
                                                                    save_converge_report="",
                                                                    max_iter=max_iter)
@@ -162,7 +171,9 @@ class StabilityExperiment:
                                                         y_label="'{}' algorithm's error [1]".format(algo_name))
                 # calc stability score
                 try:
-                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary) / StabilityExperiment.METRIC(dataset=dataset, summary=noised_dataset))
+                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary,
+                                                                     summary=summary) / StabilityExperiment.METRIC(
+                        dataset=dataset, summary=noised_dataset))
                 except:
                     stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary))
                 print("Obtain stability score={:.5f}".format(stability_score))
@@ -191,7 +202,9 @@ class StabilityExperiment:
         """
         row_indexes = list(range(dataset.shape[0]))
         col_indexes = list(range(dataset.shape[1]))
-        return dataset.iloc[random.sample(row_indexes, round((1-noise) * len(row_indexes))), random.sample(col_indexes, round((1-noise) * len(col_indexes)))]
+        return dataset.iloc[
+            random.sample(row_indexes, round((1 - noise) * len(row_indexes))), random.sample(col_indexes, round(
+                (1 - noise) * len(col_indexes)))]
 
 
 def prepare_dataset(df):
@@ -200,7 +213,10 @@ def prepare_dataset(df):
     # remove _rows with nan
     df.dropna(inplace=True)
     # get only max number of _rows to work with
-    return df.iloc[:200, -5:]
+    if df.shape[1] > 10:
+        return df.iloc[:200, 1:15]
+    else:
+        return df.iloc[:200, :]
 
 
 def run_test():
@@ -208,16 +224,19 @@ def run_test():
     datasets = {os.path.basename(path).replace(".csv", ""): prepare_dataset(pd.read_csv(path))
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
-    StabilityExperiment.run(datasets=datasets,
-                            noise_function=StabilityExperiment._add_dataset_gaussian_noise,
-                            algorithms={
-                                "las_vegas": LasVegasSummary,
-                                "greedy": GreedySummary,
-                                #"genetic": GeneticSummary,
-                            },
-                            summaries_sizes=[(10, 0), (20, 0), (30, 0)],
-                            main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),
-                            max_iter=30)
+    for metric_name, metric in StabilityExperiment.METRICS.items():
+        StabilityExperiment.run(datasets=datasets,
+                                metric_name=metric_name,
+                                metric=metric,
+                                noise_function=StabilityExperiment._add_dataset_gaussian_noise,
+                                algorithms={
+                                    "las_vegas": LasVegasSummary,
+                                    "genetic": GeneticSummary,
+                                    "combined_greedy": CombinedGreedySummary,
+                                },
+                                summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
+                                main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),
+                                max_iter=30)
 
 
 if __name__ == '__main__':

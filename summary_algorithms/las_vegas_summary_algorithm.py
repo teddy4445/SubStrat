@@ -46,7 +46,7 @@ class LasVegasSummary(BaseSummary):
         converge_report = ConvergeReport()
 
         # init all the vars we need in the process
-        best_score = 9999
+        best_score = 9999  # TODO: can be done better
         best_rows = []
         best_columns = []
 

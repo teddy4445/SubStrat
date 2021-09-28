@@ -17,6 +17,7 @@ class GreedySummary(BaseSummary):
 
     # GLOBAL PARMS #
     PREVENT_LOOP = True
+    PERFORMANCE_OPTIMIZED = True
     # END - GLOBAL PARMS #
 
     def __init__(self):
@@ -54,6 +55,11 @@ class GreedySummary(BaseSummary):
         # calc once the transpose of the dataset (matrix) for the second step in each iteration
         dataset_transposed = dataset.transpose()
 
+        # init best option we would like to return for performance analysis
+        best_score = 9999  # TODO: can be done better
+        best_rows = []
+        best_columns = []
+
         # when no other swap is taken place, this is the equilibrium and we can stop searching
         # Note: we introduce the "max_iter" stop condition in order stop the run after enough steps
         while (round_count < max_iter or max_iter == -1) and (collections.Counter(old_pick_rows) != collections.Counter(pick_rows) or collections.Counter(old_pick_columns) != collections.Counter(pick_columns)):
@@ -85,6 +91,9 @@ class GreedySummary(BaseSummary):
             pick_rows = sorted(pick_rows)
             pick_columns = sorted(pick_columns)
 
+            # calc the current solutions performance
+            performance = evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns])
+
             # Add the data for the report
             converge_report.add_step(row=pick_rows,
                                      col=pick_columns,
@@ -92,7 +101,12 @@ class GreedySummary(BaseSummary):
                                      col_score=evaluate_score_function(dataset, dataset.iloc[old_pick_rows, pick_columns]),
                                      row_calc_time=(end_rows_calc - start_rows_calc),
                                      col_calc_time=(end_cols_calc - start_cols_calc),
-                                     total_score=evaluate_score_function(dataset, dataset.iloc[pick_rows, pick_columns]))
+                                     total_score=performance)
+
+            # remember the best results
+            if performance < best_score:
+                best_rows = pick_rows
+                best_columns = pick_columns
 
             # in order to prevent loops, once found, we want to jump to other, random start condition
             if GreedySummary.PREVENT_LOOP and round_count >= 2:
@@ -132,9 +146,14 @@ class GreedySummary(BaseSummary):
             json.dump(converge_report.to_dict(), open(save_converge_report, "w"), indent=2)
 
         # full return logic
-        if is_return_indexes:
-            return pick_rows, pick_columns, converge_report
-        return dataset.iloc[pick_rows, pick_columns], converge_report
+        if GreedySummary.PERFORMANCE_OPTIMIZED:
+            if is_return_indexes:
+                return pick_rows, pick_columns, converge_report
+            return dataset.iloc[pick_rows, pick_columns], converge_report
+        else:
+            if is_return_indexes:
+                return best_rows, best_columns, converge_report
+            return dataset.iloc[best_rows, best_columns], converge_report
 
     @staticmethod
     def _greedy_row_summary(dataset: pd.DataFrame,
