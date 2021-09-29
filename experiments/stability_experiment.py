@@ -22,7 +22,7 @@ class StabilityExperiment:
     This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes
     """
     METRICS = {
-        "mean_entropy": SummaryWellnessScores.mean_entropy,
+        #"mean_entropy": SummaryWellnessScores.mean_entropy,
         "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
         "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
         "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr
@@ -86,9 +86,9 @@ class StabilityExperiment:
                                                                                      summary_row_size=desired_row_size,
                                                                                      summary_col_size=desired_col_size,
                                                                                      summary_algorithm=algo,
-                                                                                     noise=0.1,
+                                                                                     noise=0.1 ,
                                                                                      repeats=3,
-                                                                                     start_condition_repeat=1,
+                                                                                     start_condition_repeat=3,
                                                                                      max_iter=max_iter,
                                                                                      save_converge_report=os.path.join(
                                                                                          main_save_folder_path,
@@ -100,8 +100,9 @@ class StabilityExperiment:
                                                                                              desired_col_size))))
             # save results to a summary table
             summary_table.to_csv(save_path=os.path.join(main_save_folder_path,
-                                                        "summary_table_{}X{}.csv".format(desired_row_size,
-                                                                                         desired_col_size)))
+                                                        "summary_table_{}_{}X{}.csv".format(metric_name,
+                                                                                            desired_row_size,
+                                                                                            desired_col_size)))
 
     @staticmethod
     def _stability_test(dataset_name: str,
@@ -158,7 +159,7 @@ class StabilityExperiment:
                 summary, converge_report = summary_algorithm.run(dataset=noised_dataset,
                                                                  desired_row_size=summary_row_size,
                                                                  desired_col_size=summary_col_size,
-                                                                 evaluate_score_function=StabilityExperiment.METRIC,
+                                                                 evaluate_score_function=metric,
                                                                  is_return_indexes=False,
                                                                  save_converge_report=save_path,
                                                                  max_iter=max_iter)
@@ -171,18 +172,16 @@ class StabilityExperiment:
                                                         y_label="'{}' algorithm's error [1]".format(algo_name))
                 # calc stability score
                 try:
-                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary,
-                                                                     summary=summary) / StabilityExperiment.METRIC(
-                        dataset=dataset, summary=noised_dataset))
+                    stability_score = abs(metric(dataset=base_line_summary, summary=summary) / metric(dataset=dataset, summary=noised_dataset))
                 except:
-                    stability_score = abs(StabilityExperiment.METRIC(dataset=base_line_summary, summary=summary))
+                    stability_score = abs(metric(dataset=base_line_summary, summary=summary))
                 print("Obtain stability score={:.5f}".format(stability_score))
                 scores.append(stability_score)
         return "{} \\pm {}".format(np.nanmean(scores), np.nanstd(scores))
 
     @staticmethod
-    def _add_dataset_gaussian_noise(dataset: pd.DataFrame,
-                                    noise: float) -> pd.DataFrame:
+    def add_dataset_gaussian_noise(dataset: pd.DataFrame,
+                                   noise: float) -> pd.DataFrame:
         """
         A noise function that takes the dataset and adds to each value a Gaussian noise with a given STD = noise
         :param dataset: The dataset we want to add noise on
@@ -192,8 +191,8 @@ class StabilityExperiment:
         return dataset + np.random.normal(0, noise, [dataset.shape[0], dataset.shape[1]])
 
     @staticmethod
-    def _add_dataset_subset_pick_noise(dataset: pd.DataFrame,
-                                       noise: float) -> pd.DataFrame:
+    def add_dataset_subset_pick_noise(dataset: pd.DataFrame,
+                                      noise: float) -> pd.DataFrame:
         """
         A noise function that takes a random subset of size (1-noise) from the original dataset for both the rows and columns
         :param dataset: The dataset we want to add noise on
@@ -202,9 +201,9 @@ class StabilityExperiment:
         """
         row_indexes = list(range(dataset.shape[0]))
         col_indexes = list(range(dataset.shape[1]))
-        return dataset.iloc[
-            random.sample(row_indexes, round((1 - noise) * len(row_indexes))), random.sample(col_indexes, round(
-                (1 - noise) * len(col_indexes)))]
+        noisy_dataset = dataset.iloc[random.sample(row_indexes, round((1 - noise) * len(row_indexes))), random.sample(col_indexes, round((1 - noise) * len(col_indexes)))]
+        noisy_dataset.reset_index(inplace=True)
+        return noisy_dataset
 
 
 def prepare_dataset(df):
@@ -228,13 +227,14 @@ def run_test():
         StabilityExperiment.run(datasets=datasets,
                                 metric_name=metric_name,
                                 metric=metric,
-                                noise_function=StabilityExperiment._add_dataset_gaussian_noise,
+                                noise_function=StabilityExperiment.add_dataset_subset_pick_noise,
                                 algorithms={
                                     "las_vegas": LasVegasSummary,
                                     "genetic": GeneticSummary,
                                     "combined_greedy": CombinedGreedySummary,
                                 },
-                                summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
+                                #summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
+                                summaries_sizes=[(10, 3)],
                                 main_save_folder_path=os.path.join(os.path.dirname(__file__), "stability_results"),
                                 max_iter=30)
 

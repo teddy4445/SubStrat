@@ -9,6 +9,7 @@ __pycache__/
 results/*
 *.csv
 *.png
+*.json
 
 # Distribution / packaging
 .Python

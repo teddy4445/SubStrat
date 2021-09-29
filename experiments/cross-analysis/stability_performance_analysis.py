@@ -2,6 +2,7 @@
 import os
 import numpy as np
 import pandas as pd
+from glob import glob
 import matplotlib.pyplot as plt
 
 
@@ -22,31 +23,6 @@ class StabilityPerformanceAnalysis:
         pass
 
     @staticmethod
-    def prepare():
-        """
-        Technical IO preparations
-        """
-        # add folder for the meta analysis results
-        try:
-            os.mkdir(StabilityPerformanceAnalysis.RESULTS_PATH)
-        except Exception as error:
-            pass
-
-    @staticmethod
-    def stability_test_file_to_working_format(metrics_files_paths: dict):
-        """
-        Generating from the "StabilityExperiment" file results structure, the structure we want for this analysis
-        """
-        # load data
-        dfs = {metric_name: pd.read_csv(path) for metric_name, path in metrics_files_paths.items()}
-
-        algo_df = {}
-
-        # save results back to the needed files
-        [algo_data.to_csv(os.path.join(StabilityPerformanceAnalysis.RESULTS_PATH, "stability", "{}.csv".format(algo_name)))
-         for algo_name, algo_data in algo_df.items()]
-
-    @staticmethod
     def single_compare(performance_file_path: str,
                        stability_file_path: str):
         """
@@ -55,6 +31,11 @@ class StabilityPerformanceAnalysis:
         :param stability_file_path: the stability data file path
         :return: none - save a plot to a file
         """
+        # add folder for the meta analysis results
+        try:
+            os.mkdir(StabilityPerformanceAnalysis.RESULTS_PATH)
+        except Exception as error:
+            pass
         # read data
         performance_df = pd.read_csv(performance_file_path)
         stability_df = pd.read_csv(stability_file_path)
@@ -65,7 +46,7 @@ class StabilityPerformanceAnalysis:
             for dataset_index, dataset in enumerate(datasets):
                 plt.scatter(list(performance_df[metric])[dataset_index],
                             list(stability_df[metric])[dataset_index],
-                            s=10,
+                            s=20,
                             marker=StabilityPerformanceAnalysis.MARKERS[metric_index],
                             color=StabilityPerformanceAnalysis.COLORS[dataset_index])
         plt.xlabel("Performance")

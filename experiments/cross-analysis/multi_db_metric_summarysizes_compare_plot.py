@@ -6,6 +6,7 @@ from glob import glob
 import matplotlib.pyplot as plt
 
 # project imports
+from ds.table import Table
 
 
 class CompareSummaryAlgorithmsPlotter:
@@ -69,6 +70,10 @@ class CompareSummaryAlgorithmsPlotter:
         # generate plot
         fig, axes = plt.subplots(len(metrics), len(data), figsize=(6 * len(metrics), 6 * len(data)))  # subplots as the number of summary sizes
         for summary_index, (summary_size, algo_dicts) in enumerate(data.items()):
+            # init summary table to save
+            summary_table = Table(columns=algos,
+                                  rows_ids=metrics)
+            # make one metric graph for all the algos and DBs
             for metric_index, metric_name in enumerate(metrics):
                 for algo_index, algo in enumerate(algos):
                     # plot bar
@@ -79,16 +84,23 @@ class CompareSummaryAlgorithmsPlotter:
                                                           alpha=0.75,
                                                           label=algo.replace("_", " ").title())
                     # the mean line
+                    mean_db_val = np.mean(list(algo_dicts[algo][metric_name]))
+                    std_db_val = np.std(list(algo_dicts[algo][metric_name]))
                     axes[summary_index, metric_index].plot([- len(algos)/2 * width, len(datasets) - 1 + len(algos)/2 * width],
-                                                           [np.mean(list(algo_dicts[algo][metric_name])), np.mean(list(algo_dicts[algo][metric_name]))],
+                                                           [mean_db_val, mean_db_val],
                                                            "--",
                                                            linewidth=2,
                                                            color=CompareSummaryAlgorithmsPlotter.COLORS[algo_index])
+                    summary_table.add(column=algo,
+                                      row_id=metric_name,
+                                      data_point="{} +- {}".format(mean_db_val, std_db_val))
                 axes[summary_index, metric_index].set_xlabel("Datasets")
                 axes[summary_index, metric_index].set_ylabel("Error '{}' [1]".format(metric_name.replace("_", " ")))
                 axes[summary_index, metric_index].set_xticks(range(len(datasets)))
                 axes[summary_index, metric_index].set_xticklabels(datasets, rotation=45)
                 axes[summary_index, metric_index].legend(loc="upper left")
+            # save summary table to file
+            summary_table.to_csv(save_path=os.path.join(main_path, CompareSummaryAlgorithmsPlotter.RESULTS_FOLDER_NAME, "score_compare_{}.csv".format(summary_size)))
 
         ROW_LABEL_PAD = 5
         for ax, row in zip(axes[:, 0], summary_sizes):
