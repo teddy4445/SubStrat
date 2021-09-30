@@ -177,7 +177,7 @@ class StabilityExperiment:
                     stability_score = abs(metric(dataset=base_line_summary, summary=summary))
                 print("Obtain stability score={:.5f}".format(stability_score))
                 scores.append(stability_score)
-        return "{} \\pm {}".format(np.nanmean(scores), np.nanstd(scores))
+        return "{} +- {}".format(np.nanmean(scores), np.nanstd(scores))
 
     @staticmethod
     def add_dataset_gaussian_noise(dataset: pd.DataFrame,

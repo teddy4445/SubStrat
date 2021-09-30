@@ -29,6 +29,30 @@ class Table:
         """
         self.data[self.rows_ids.index(row_id)][self.columns.index(column)] = data_point
 
+    def add_row(self,
+                row_id: str,
+                data) -> None:
+        """
+        Add a row of data to the right place in the table
+        :param row_id: the row index name
+        :param data: the values we want to add to this row
+        :return: None
+        """
+        # make sure the length is legit
+        if len(data) != len(self.columns):
+            raise Exception("Error is Table.add_row: the number of values and columns do not match")
+
+        if isinstance(data, list):
+            [self.add(column=col_name,
+                      row_id=row_id,
+                      data_point=data[index]) for index, col_name in enumerate(self.columns)]
+        elif isinstance(data, dict):
+            [self.add(column=key,
+                      row_id=row_id,
+                      data_point=val) for key, val in data.items()]
+        else:
+            raise Exception("Error is Table.add_row: data type must be list of dict")
+
     def to_dataframe(self) -> pd.DataFrame:
         """
         Convert the 'Table' instance to pd.DataFrame instance
