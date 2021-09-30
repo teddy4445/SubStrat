@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from glob import glob
+from time import time
 
 # project import
 from ds.table import Table
@@ -74,9 +75,16 @@ class PerformanceStabilityConnection:
                                             len(PerformanceStabilityConnection.METRICS))])
 
         running_index = 0
+        start_exp_time = time()
         for algo_name, algo in PerformanceStabilityConnection.ALGOS.items():
             for metric_name, metric in PerformanceStabilityConnection.METRICS.items():
                 for dataset_name, dataset in PerformanceStabilityConnection.DATASETS.items():
+                    print("Working on algo = {}, metric = {}, dataset = {}, finised {} iteration during {} seconds".format(
+                        algo_name,
+                        metric_name,
+                        dataset_name,
+                        running_index,
+                        time()-start_exp_time))
                     # run the performance metric
                     mean_performance, std_performance = self._performance_test(
                         metric_name=metric_name,
@@ -156,7 +164,6 @@ class PerformanceStabilityConnection:
                                                 desired_col_size=desired_col_size,
                                                 evaluate_score_function=metric,
                                                 is_return_indexes=False,
-                                                save_converge_report=None,
                                                 max_iter=max_iter)
             # add summary to later analysis
             self.summaries.append((summary, metric_name, dataset_name))
@@ -181,7 +188,6 @@ class PerformanceStabilityConnection:
                                                       desired_col_size=desired_col_size,
                                                       evaluate_score_function=metric,
                                                       is_return_indexes=False,
-                                                      save_converge_report="",
                                                       max_iter=max_iter)
 
         scores = []
@@ -195,7 +201,6 @@ class PerformanceStabilityConnection:
                                                     desired_col_size=desired_col_size,
                                                     evaluate_score_function=metric,
                                                     is_return_indexes=False,
-                                                    save_converge_report=None,
                                                     max_iter=max_iter)
                 # calc stability score
                 try:
