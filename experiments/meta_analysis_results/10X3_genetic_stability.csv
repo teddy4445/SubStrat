@@ -1,6 +1,0 @@
-,mean_entropy,coefficient_of_anomaly,coefficient_of_variation,mean_pearson_corr
-dataset_1_birds_sings.csv,0.0,0.0,0.0,0.0
-dataset_2_headech_prodrom.csv,0.0,0.0,0.0,0.0
-dataset_3_liver-disorders.csv,0.0,0.0,0.0,0.0
-dataset_4_mfeat-morphological.csv,0.0,0.0,0.0,0.0
-dataset_5_page-blocks.csv,0.0,0.0,0.0,0.0
