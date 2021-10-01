@@ -9,7 +9,7 @@ from matplotlib.ticker import AutoMinorLocator
 
 class StabilityPerformanceVisual:
     """
-    This class analyze the connection between performance and stability in different summarization algorithms
+    This class visualize the connection between performance and stability in different summarization algorithms
     """
 
     # CONSTS #

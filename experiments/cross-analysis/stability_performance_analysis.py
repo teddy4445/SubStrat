@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 class StabilityPerformanceAnalysis:
     """
-    This class analyze the connection between performance and stability in different summarization algorithms
+    This class analyze the generates the data for performance and stability connection in different summarization algorithms
     """
 
     # CONSTS #
