@@ -14,8 +14,7 @@ class StabilityPerformanceVisual:
 
     # CONSTS #
     MARKERS = ["o", "^", "P", "s", "*", "+", "X", "D", "d"]
-    COLORS = ["black", "blue", "red", "green", "yellow", "purple", "orange", "gray"]
-
+    COLORS = ["black", "blue", "red", "green", "yellow", "purple", "orange", "gray", "peru", "aqua", "violet", "crimson", "indigo", "lime", "darkolivegreen"]
     # END - CONSTS #
 
     def __init__(self):
@@ -26,12 +25,10 @@ class StabilityPerformanceVisual:
                 summary_save_path: str,
                 algo_data_path: str,
                 algo_save_path: str):
-        """
         StabilityPerformanceVisual.show_summary_performance_stability_avg(data_path=summary_data_path,
                                                                           save_path=summary_save_path)
         StabilityPerformanceVisual.show_summary_performance_stability_all(data_path=summary_data_path,
                                                                           save_path=summary_save_path)
-                                                                          """
         StabilityPerformanceVisual.show_algo_performance_stability_all(data_path=algo_data_path,
                                                                        save_path=algo_save_path)
 
@@ -104,6 +101,8 @@ class StabilityPerformanceVisual:
             pass
         # read data
         df = pd.read_csv(data_path) if df is None else df
+        # drop nans
+        df.dropna(inplace=True)
         # filter if requested
         if filter_db != "":
             df = df[df["dataset"] == filter_db]

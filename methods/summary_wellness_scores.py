@@ -15,6 +15,48 @@ class SummaryWellnessScores:
         pass
 
     @staticmethod
+    def mean_metrics(dataset: pd.DataFrame,
+                     summary: pd.DataFrame,
+                     property_function,
+                     distance_metric_1,
+                     distance_metric_2) -> float:
+        """
+        A general approach to the similarity between a dataset and a summary
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :param property_function: a function object that gets (pandas' dataframe) and returns a property of the matrix
+        :param distance_metric_1: a function object that gets two arguments and returns a float as the distance between them
+        :param distance_metric_2: a function object that gets two arguments and returns a float as the distance between them
+        :return: the score between them ranging (0, inf)
+        """
+        try:
+            return (distance_metric_1(property_function(dataset), property_function(summary)) + distance_metric_2(property_function(dataset), property_function(summary)))/2
+        except:
+            return 0
+
+    @staticmethod
+    def harmonic_mean_metrics(dataset: pd.DataFrame,
+                              summary: pd.DataFrame,
+                              property_function,
+                              distance_metric_1,
+                              distance_metric_2) -> float:
+        """
+        A general approach to the similarity between a dataset and a summary
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :param property_function: a function object that gets (pandas' dataframe) and returns a property of the matrix
+        :param distance_metric_1: a function object that gets two arguments and returns a float as the distance between them
+        :param distance_metric_2: a function object that gets two arguments and returns a float as the distance between them
+        :return: the score between them ranging (0, inf)
+        """
+        try:
+            val_1 = distance_metric_1(property_function(dataset), property_function(summary))
+            val_2 = distance_metric_2(property_function(dataset), property_function(summary))
+            return (2 * val_1 * val_2) / (val_1 + val_2)
+        except:
+            return 0
+
+    @staticmethod
     def general_approach_metric(dataset: pd.DataFrame,
                                 summary: pd.DataFrame,
                                 property_function,
@@ -85,6 +127,23 @@ class SummaryWellnessScores:
                                                              summary=summary,
                                                              property_function=SummaryWellnessScores._average_coefficient_of_anomaly_of_feature,
                                                              distance_metric=SummaryWellnessScores._l1)
+
+    @staticmethod
+    def coverage(dataset: pd.DataFrame,
+                 summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, 1)
+        """
+        answer = []
+        for column in summary.columns:
+            try:
+                vc = dataset[column].value_counts()
+                answer.append(sum([vc[b] for b in summary[column].unique()])/vc.sum())
+            except:
+                pass
+        return 1 - np.nanmean(answer)
 
     @staticmethod
     def data_stability(dataset: pd.DataFrame,

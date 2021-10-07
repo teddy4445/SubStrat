@@ -24,6 +24,7 @@ class PerformanceStabilityConnection:
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     METRICS = {
+        "coverage": SummaryWellnessScores.coverage,
         "mean_entropy": SummaryWellnessScores.mean_entropy,
         "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
         "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
@@ -31,9 +32,9 @@ class PerformanceStabilityConnection:
     }
 
     ALGOS = {
-        "combined_greedy": CombinedGreedySummary,
+        "las_vegas": LasVegasSummary,
         "genetic": GeneticSummary,
-        "las_vegas": LasVegasSummary
+        "combined_greedy": CombinedGreedySummary
     }
 
     # STABILITY TEST FACTORS
@@ -41,11 +42,11 @@ class PerformanceStabilityConnection:
     NOISE_FACTOR = 0.05
     REPEAT_NOISE = 3
     REPEAT_START_CONDITION = 3
-    REPEAT_SUMMARY = 10
+    REPEAT_SUMMARY = 9
 
     # PERFORMANCE TEST FACTORS
-    REPEAT_PERFORMANCE = 5
-    MAX_ITER = 30
+    REPEAT_PERFORMANCE = 9
+    MAX_ITER = 25
     SUMMARY_ROW_SIZE = 20
     SUMMARY_COL_SIZE = 5
 

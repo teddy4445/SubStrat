@@ -306,7 +306,8 @@ def run_test(inner_result_folder: str = "multi_db_multi_metric_initial_results")
                                              "mean_entropy": SummaryWellnessScores.mean_entropy,
                                              "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
                                              "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
-                                             "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr
+                                             "mean_pearson_corr": SummaryWellnessScores.mean_pearson_corr,
+                                             "coverage": SummaryWellnessScores.coverage
                                          },
                                          summaries_sizes=[(10, 3), (20, 3), (10, 5), (20, 5)],
                                          main_save_folder_path=os.path.join(os.path.dirname(__file__),

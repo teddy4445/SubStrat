@@ -213,9 +213,9 @@ def prepare_dataset(df):
     df.dropna(inplace=True)
     # get only max number of _rows to work with
     if df.shape[1] > 10:
-        return df.iloc[:200, 1:15]
+        return df.iloc[:500, 1:15]
     else:
-        return df.iloc[:200, :]
+        return df.iloc[:500, :]
 
 
 def run_test():
