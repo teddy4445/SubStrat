@@ -4,11 +4,13 @@ import numpy as np
 import pandas as pd
 from glob import glob
 from time import time
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
 
 # project import
 from ds.table import Table
+from experiments.stability_experiment import prepare_dataset
 from methods.summary_wellness_scores import SummaryWellnessScores
-from experiments.stability_experiment import StabilityExperiment, prepare_dataset
 from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 
 
@@ -18,24 +20,30 @@ class GeneticSummaryMultipleOptimizationMetrics:
     to study the results
     """
 
+    MARKERS = ["o", "^", "P", "s", "*", "+", "X", "D", "d"]
+    COLORS = ["black", "blue", "red", "green", "yellow", "purple", "orange", "gray", "peru", "aqua", "violet", "crimson", "indigo", "lime", "darkolivegreen"]
+
     DATASETS = {os.path.basename(path).replace(".csv", ""): prepare_dataset(pd.read_csv(path))
                 for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
 
     METRICS = {
-        "stability": SummaryWellnessScores.stability,
-        "mean_entropy": SummaryWellnessScores.mean_entropy,
-        "mean_mean_entropy_stability": SummaryWellnessScores.mean_mean_entropy_stability,
-        "hmean_mean_entropy_stability": SummaryWellnessScores.hmean_mean_entropy_stability,
+        "entropy": SummaryWellnessScores.mean_entropy,
+        "mean_entropy_stability": SummaryWellnessScores.mean_mean_entropy_stability,
+        "hmean_entropy_stability": SummaryWellnessScores.hmean_mean_entropy_stability,
         "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
-        "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation
+        "mean_coefficient_of_anomaly_stability": SummaryWellnessScores.mean_coefficient_of_anomaly_stability,
+        "hmean_coefficient_of_anomaly_stability": SummaryWellnessScores.hmean_coefficient_of_anomaly_stability,
+        "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation,
+        "mean_coefficient_of_variation_stability": SummaryWellnessScores.mean_coefficient_of_variation_stability,
+        "hmean_coefficient_of_variation_stability": SummaryWellnessScores.hmean_coefficient_of_variation_stability
     }
 
     # STABILITY TEST FACTORS
-    NOISE_FUNC = StabilityExperiment.add_dataset_subset_pick_noise
+    NOISE_FUNC = SummaryWellnessScores.add_dataset_subset_pick_noise
     NOISE_FACTOR = 0.05
     REPEAT_NOISE = 3
     REPEAT_START_CONDITION = 3
-    REPEAT_SUMMARY = 5
+    REPEAT_SUMMARY = 1
 
     # ALGORITHM HYPER-PARAMETERS
     MAX_ITER = 25
@@ -110,6 +118,22 @@ class GeneticSummaryMultipleOptimizationMetrics:
                     # move table to file so even a break in some iteration we have the file ready up to this point
                     answer_table.to_csv(
                         save_path=os.path.join(GeneticSummaryMultipleOptimizationMetrics.RESULT_PATH, "answer.csv"))
+        # prepare plot
+        answer_df = answer_table.to_dataframe()
+        ds_names = list(GeneticSummaryMultipleOptimizationMetrics.DATASETS.keys())
+        for row_index, row in answer_df.iterrows():
+            plt.scatter(row["performance"],
+                        row["stability"],
+                        marker="o" if "hmean" in row["metric"] else "^" if "mean" in row["metric"] else "P",
+                        color=GeneticSummaryMultipleOptimizationMetrics.COLORS[ds_names.index(row["dataset"])])
+        plt.xlabel("Performance [1]")
+        plt.xlabel("Stability [1]")
+        plt.legend(handels=[mlines.Line2D([], [], color='black', marker='o', markersize=15, linewidth=0, label='Harmonic Mean'),
+                            mlines.Line2D([], [], color='black', marker='^', markersize=15, linewidth=0, label='Mean'),
+                            mlines.Line2D([], [], color='black', marker='P', markersize=15, linewidth=0, label='Only Performance')])
+        plt.grid(alpha=0.1)
+        plt.savefig(os.path.join(GeneticSummaryMultipleOptimizationMetrics.RESULT_PATH, "answer_scatter.png"))
+        plt.close()
 
     def _performance_test(self,
                           metric_name: str,
@@ -176,6 +200,7 @@ class GeneticSummaryMultipleOptimizationMetrics:
                     stability_score = abs(metric(dataset=base_line_summary, summary=summary))
                 scores.append(stability_score)
         return np.nanmean(scores)
+
 
 if __name__ == '__main__':
     exp = GeneticSummaryMultipleOptimizationMetrics()

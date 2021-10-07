@@ -179,32 +179,6 @@ class StabilityExperiment:
                 scores.append(stability_score)
         return "{} +- {}".format(np.nanmean(scores), np.nanstd(scores))
 
-    @staticmethod
-    def add_dataset_gaussian_noise(dataset: pd.DataFrame,
-                                   noise: float) -> pd.DataFrame:
-        """
-        A noise function that takes the dataset and adds to each value a Gaussian noise with a given STD = noise
-        :param dataset: The dataset we want to add noise on
-        :param noise: the noise hyper-parameter
-        :return: noisy dataframe as Pandas' DataFrame
-        """
-        return dataset + np.random.normal(0, noise, [dataset.shape[0], dataset.shape[1]])
-
-    @staticmethod
-    def add_dataset_subset_pick_noise(dataset: pd.DataFrame,
-                                      noise: float) -> pd.DataFrame:
-        """
-        A noise function that takes a random subset of size (1-noise) from the original dataset for both the rows and columns
-        :param dataset: The dataset we want to add noise on
-        :param noise: the noise hyper-parameter
-        :return: noisy dataframe as Pandas' DataFrame
-        """
-        row_indexes = list(range(dataset.shape[0]))
-        col_indexes = list(range(dataset.shape[1]))
-        noisy_dataset = dataset.iloc[random.sample(row_indexes, round((1 - noise) * len(row_indexes))), random.sample(col_indexes, round((1 - noise) * len(col_indexes)))]
-        noisy_dataset.reset_index(inplace=True)
-        return noisy_dataset
-
 
 def prepare_dataset(df):
     # remove what we do not need
@@ -227,7 +201,7 @@ def run_test():
         StabilityExperiment.run(datasets=datasets,
                                 metric_name=metric_name,
                                 metric=metric,
-                                noise_function=StabilityExperiment.add_dataset_subset_pick_noise,
+                                noise_function=SummaryWellnessScores.add_dataset_subset_pick_noise,
                                 algorithms={
                                     "las_vegas": LasVegasSummary,
                                     "genetic": GeneticSummary,

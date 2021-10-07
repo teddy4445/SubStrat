@@ -38,7 +38,7 @@ class PerformanceStabilityConnection:
     }
 
     # STABILITY TEST FACTORS
-    NOISE_FUNC = StabilityExperiment.add_dataset_subset_pick_noise
+    NOISE_FUNC = SummaryWellnessScores.add_dataset_subset_pick_noise
     NOISE_FACTOR = 0.05
     REPEAT_NOISE = 3
     REPEAT_START_CONDITION = 3

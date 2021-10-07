@@ -3,6 +3,7 @@ import math
 import scipy
 import numpy as np
 import pandas as pd
+from random import random, sample
 from scipy.stats import entropy
 
 
@@ -13,6 +14,97 @@ class SummaryWellnessScores:
 
     def __init__(self):
         pass
+
+    # MEAN PERFORMANCE-STABILITY METRICS #
+
+    @staticmethod
+    def mean_mean_entropy_stability(dataset: pd.DataFrame,
+                                    summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        return (SummaryWellnessScores.mean_entropy(dataset=dataset,
+                                                   summary=summary) +
+                SummaryWellnessScores.stability(dataset=dataset,
+                                                summary=summary,
+                                                performance_function=SummaryWellnessScores.mean_entropy))/2
+
+    @staticmethod
+    def hmean_mean_entropy_stability(dataset: pd.DataFrame,
+                                    summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        p = SummaryWellnessScores.mean_entropy(dataset=dataset,
+                                               summary=summary)
+        s = SummaryWellnessScores.stability(dataset=dataset,
+                                            summary=summary,
+                                            performance_function=SummaryWellnessScores.mean_entropy)
+        return (2 * s * p)/(s+p)
+
+    @staticmethod
+    def mean_coefficient_of_anomaly_stability(dataset: pd.DataFrame,
+                                              summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        return (SummaryWellnessScores.coefficient_of_anomaly(dataset=dataset,
+                                                             summary=summary) +
+                SummaryWellnessScores.stability(dataset=dataset,
+                                                summary=summary,
+                                                performance_function=SummaryWellnessScores.coefficient_of_anomaly))/2
+
+    @staticmethod
+    def hmean_coefficient_of_anomaly_stability(dataset: pd.DataFrame,
+                                               summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        p = SummaryWellnessScores.coefficient_of_anomaly(dataset=dataset,
+                                                         summary=summary)
+        s = SummaryWellnessScores.stability(dataset=dataset,
+                                            summary=summary,
+                                            performance_function=SummaryWellnessScores.coefficient_of_anomaly)
+        return (2 * s * p)/(s+p)
+
+    @staticmethod
+    def mean_coefficient_of_variation_stability(dataset: pd.DataFrame,
+                                              summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        return (SummaryWellnessScores.coefficient_of_variation(dataset=dataset,
+                                                               summary=summary) +
+                SummaryWellnessScores.stability(dataset=dataset,
+                                                summary=summary,
+                                                performance_function=SummaryWellnessScores.coefficient_of_variation))/2
+
+    @staticmethod
+    def hmean_coefficient_of_variation_stability(dataset: pd.DataFrame,
+                                                summary: pd.DataFrame) -> float:
+        """
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :return: the score between them ranging (0, inf)
+        """
+        p = SummaryWellnessScores.coefficient_of_variation(dataset=dataset,
+                                                         summary=summary)
+        s = SummaryWellnessScores.stability(dataset=dataset,
+                                            summary=summary,
+                                            performance_function=SummaryWellnessScores.coefficient_of_variation)
+        return (2 * s * p)/(s+p)
+
+    # END - MEAN PERFORMANCE-STABILITY METRICS #
 
     @staticmethod
     def mean_metrics(dataset: pd.DataFrame,
@@ -73,6 +165,34 @@ class SummaryWellnessScores:
             return distance_metric(property_function(dataset), property_function(summary))
         except:
             return 0
+
+    @staticmethod
+    def stability(dataset: pd.DataFrame,
+                  summary: pd.DataFrame,
+                  performance_function,
+                  noise: float = 0.05,
+                  folds: int = 3) -> float:
+        """
+        The Lyapunov stability metric between the dataset and its summary in some measurement
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :param performance_function: the metric used to evaluate the summary goodness
+        :param noise: the hyperparamter to the noise added to the dataset
+        :param folds: the number of folds we do to get an approximation to the stability measurement
+        :return: the score between them ranging (0, inf)
+        """
+        scores = []
+        for fold in range(folds):
+            noised_dataset = SummaryWellnessScores.add_dataset_subset_pick_noise(dataset=dataset,
+                                                                                 noise=noise)
+            # calc stability score
+            try:
+                stability_score = abs(performance_function(dataset=noised_dataset, summary=summary) / performance_function(dataset=dataset, summary=summary))
+            except:
+                stability_score = abs(performance_function(dataset=noised_dataset, summary=summary))
+            scores.append(stability_score)
+        return np.nanmean(scores)
+
 
     @staticmethod
     def mean_entropy(dataset: pd.DataFrame,
@@ -145,29 +265,6 @@ class SummaryWellnessScores:
                 pass
         return 1 - np.nanmean(answer)
 
-    @staticmethod
-    def data_stability(dataset: pd.DataFrame,
-                       summary: pd.DataFrame,
-                       approximation_method_function,
-                       approximations_distance_function,
-                       folds: int) -> float:
-        """
-        :param dataset: the dataset (pandas' dataframe)
-        :param summary: the summary of the dataset (pandas' dataframe)
-        :param approximation_method_function:
-        :param approximations_distance_function:
-        :param folds:
-        :return: the score between them ranging (0, inf)
-        """
-        return SummaryWellnessScores._vector_l1(value1=SummaryWellnessScores._data_stability_test(matrix=dataset,
-                                                                                                  folds=folds,
-                                                                                                  approximation_method_function=approximation_method_function,
-                                                                                                  approximations_distance_function=approximations_distance_function),
-                                                value2=SummaryWellnessScores._data_stability_test(matrix=summary,
-                                                                                                  folds=folds,
-                                                                                                  approximation_method_function=approximation_method_function,
-                                                                                                  approximations_distance_function=approximations_distance_function))
-
     # PROPERTY FUNCTIONS #
 
     @staticmethod
@@ -208,32 +305,6 @@ class SummaryWellnessScores:
         """
         return np.nanmean([np.nanmean(matrix[column]) / np.nanstd(matrix[column]) if np.nanstd(matrix[column]) > 0 else np.nanmean(matrix[column]) for column in list(matrix)])
 
-    @staticmethod
-    def _data_stability_test(matrix: pd.DataFrame,
-                             approximation_method_function,
-                             approximations_distance_function,
-                             folds: int):
-        """
-
-        :param matrix:
-        :param approximation_method_function:
-        :param approximations_distance_function:
-        :param folds:
-        :return:
-        """
-        chunk_size = math.floor(matrix.shape[0] / folds)
-        tests_datasets = [matrix.iloc[:chunk_index * chunk_size] for chunk_index in range(1, folds)]
-        tests_datasets.append(matrix)
-
-        feature_sets = []
-        scores = [0]
-        for i in range(folds):
-            feature_sets.append(list(approximation_method_function(x)))
-            if i > 0:
-                scores.append(approximations_distance_function(feature_sets[i], feature_sets[i - 1]))
-        # return the scores to the caller
-        return scores
-
     # END - PROPERTY FUNCTIONS #
 
     # DISTANCE FUNCTIONS #
@@ -254,3 +325,33 @@ class SummaryWellnessScores:
         return math.sqrt(sum([math.pow(value1[i] - value2[i], 2) for i in range(len(value1))]))
 
     # END - DISTANCE FUNCTIONS #
+
+    # NOISE FUNCTIONS #
+
+    @staticmethod
+    def add_dataset_subset_pick_noise(dataset: pd.DataFrame,
+                                      noise: float) -> pd.DataFrame:
+        """
+        A noise function that takes a random subset of size (1-noise) from the original dataset for both the rows and columns
+        :param dataset: The dataset we want to add noise on
+        :param noise: the noise hyper-parameter
+        :return: noisy dataframe as Pandas' DataFrame
+        """
+        row_indexes = list(range(dataset.shape[0]))
+        col_indexes = list(range(dataset.shape[1]))
+        noisy_dataset = dataset.iloc[sample(row_indexes, round((1 - noise) * len(row_indexes))), sample(col_indexes, round((1 - noise) * len(col_indexes)))]
+        noisy_dataset.reset_index(inplace=True)
+        return noisy_dataset
+
+    @staticmethod
+    def add_dataset_gaussian_noise(dataset: pd.DataFrame,
+                                   noise: float) -> pd.DataFrame:
+        """
+        A noise function that takes the dataset and adds to each value a Gaussian noise with a given STD = noise
+        :param dataset: The dataset we want to add noise on
+        :param noise: the noise hyper-parameter
+        :return: noisy dataframe as Pandas' DataFrame
+        """
+        return dataset + np.random.normal(0, noise, [dataset.shape[0], dataset.shape[1]])
+
+    # END - NOISE FUNCTIONS #
