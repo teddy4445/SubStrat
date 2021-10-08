@@ -112,9 +112,9 @@ class DatasetSummaryPerformanceConnection:
                         ds_profile = DatasetPropertiesMeasurements.get_dataset_profile(dataset=dataset)
                         for name, value in ds_profile.items():
                             data["ds_{}".format(name)] = value
-                        ds_profile = DatasetPropertiesMeasurements.get_dataset_profile(dataset=summary)
-                        for name, value in ds_profile.items():
-                            data["ds_{}".format(name)] = value
+                        summary_profile = DatasetPropertiesMeasurements.get_dataset_profile(dataset=summary)
+                        for name, value in summary_profile.items():
+                            data["summary_{}".format(name)] = value
                         # save the result in the table
                         answer_table.add_row(row_id=str(running_index),
                                              data=data)
@@ -122,7 +122,7 @@ class DatasetSummaryPerformanceConnection:
                         running_index += 1
                         # move table to file so even a break in some iteration we have the file ready up to this point
                         answer_table.to_csv(
-                            save_path=os.path.join(DatasetSummaryPerformanceConnection.RESULT_PATH, "answer.csv"))
+                            save_path=os.path.join(DatasetSummaryPerformanceConnection.RESULT_PATH, "genetic_multiple_optimization.csv"))
 
     def _performance_test(self,
                           dataset,

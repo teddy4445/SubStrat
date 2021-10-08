@@ -13,8 +13,8 @@ class Table:
         self.columns = columns
         self.rows_ids = rows_ids
         self.data = [[0
-                      for col_index in range(len(columns))]
-                     for row_index in range(len(rows_ids))]
+                      for _ in range(len(columns))]
+                     for _ in range(len(rows_ids))]
 
     def add(self,
             column: str,

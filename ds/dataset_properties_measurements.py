@@ -33,8 +33,6 @@ class DatasetPropertiesMeasurements:
                 "row_over_class",
                 "col_over_class",
                 "row_over_col",
-                "col_count",
-                "col_count",
                 "col_numerical_count",
                 "col_categorical_count",
                 "classes_count",
@@ -325,7 +323,12 @@ class DatasetPropertiesMeasurements:
         if DatasetPropertiesMeasurements.IS_DEBUG:
             print("DatasetPropertiesMeasurements.std_coefficient_of_anomaly running")
         try:
-            return np.nanstd([np.nanmean(dataset[column]) / np.nanstd(dataset[column]) for column in list(dataset)])
+            values = []
+            for column in list(dataset):
+                div_std = np.nanstd(dataset[column])
+                if div_std > 0:
+                    values.append(np.nanmean(dataset[column]) / div_std)
+            return np.nanstd(values)
         except:
             return np.nan
 

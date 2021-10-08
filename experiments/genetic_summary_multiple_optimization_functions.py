@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from glob import glob
 from time import time
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
 
 # project import
 from ds.table import Table
@@ -86,54 +84,41 @@ class GeneticSummaryMultipleOptimizationMetrics:
                         running_index,
                         time() - start_exp_time))
                     # run the performance metric
-                    performance = self._performance_test(
-                        metric_name=metric_name,
-                        dataset_name=dataset_name,
-                        dataset=dataset,
-                        algo=GeneticSummary,
-                        metric=metric,
-                        desired_row_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_ROW_SIZE,
-                        desired_col_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_COL_SIZE,
-                        repeat=1,
-                        max_iter=GeneticSummaryMultipleOptimizationMetrics.MAX_ITER)
-                    # run the stability metric
-                    stability = self._stability_test(dataset=dataset,
-                                                     algo=GeneticSummary,
-                                                     metric=metric,
-                                                     desired_row_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_ROW_SIZE,
-                                                     desired_col_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_COL_SIZE,
-                                                     noise_function=GeneticSummaryMultipleOptimizationMetrics.NOISE_FUNC,
-                                                     noise=GeneticSummaryMultipleOptimizationMetrics.NOISE_FACTOR,
-                                                     repeats=GeneticSummaryMultipleOptimizationMetrics.REPEAT_NOISE,
-                                                     start_condition_repeat=GeneticSummaryMultipleOptimizationMetrics.REPEAT_START_CONDITION,
-                                                     max_iter=GeneticSummaryMultipleOptimizationMetrics.MAX_ITER)
-                    # save the result in the table
-                    answer_table.add_row(row_id=str(running_index),
-                                         data={"metric": metric_name,
-                                               "dataset": dataset_name,
-                                               "performance": performance,
-                                               "stability": stability})
-                    # count this, go to the next row
-                    running_index += 1
-                    # move table to file so even a break in some iteration we have the file ready up to this point
-                    answer_table.to_csv(
-                        save_path=os.path.join(GeneticSummaryMultipleOptimizationMetrics.RESULT_PATH, "answer.csv"))
-        # prepare plot
-        answer_df = answer_table.to_dataframe()
-        ds_names = list(GeneticSummaryMultipleOptimizationMetrics.DATASETS.keys())
-        for row_index, row in answer_df.iterrows():
-            plt.scatter(row["performance"],
-                        row["stability"],
-                        marker="o" if "hmean" in row["metric"] else "^" if "mean" in row["metric"] else "P",
-                        color=GeneticSummaryMultipleOptimizationMetrics.COLORS[ds_names.index(row["dataset"])])
-        plt.xlabel("Performance [1]")
-        plt.xlabel("Stability [1]")
-        plt.legend(handels=[mlines.Line2D([], [], color='black', marker='o', markersize=15, linewidth=0, label='Harmonic Mean'),
-                            mlines.Line2D([], [], color='black', marker='^', markersize=15, linewidth=0, label='Mean'),
-                            mlines.Line2D([], [], color='black', marker='P', markersize=15, linewidth=0, label='Only Performance')])
-        plt.grid(alpha=0.1)
-        plt.savefig(os.path.join(GeneticSummaryMultipleOptimizationMetrics.RESULT_PATH, "answer_scatter.png"))
-        plt.close()
+                    try:
+                        performance = self._performance_test(
+                            metric_name=metric_name,
+                            dataset_name=dataset_name,
+                            dataset=dataset,
+                            algo=GeneticSummary,
+                            metric=metric,
+                            desired_row_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_ROW_SIZE,
+                            desired_col_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_COL_SIZE,
+                            repeat=1,
+                            max_iter=GeneticSummaryMultipleOptimizationMetrics.MAX_ITER)
+                        # run the stability metric
+                        stability = self._stability_test(dataset=dataset,
+                                                         algo=GeneticSummary,
+                                                         metric=metric,
+                                                         desired_row_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_ROW_SIZE,
+                                                         desired_col_size=GeneticSummaryMultipleOptimizationMetrics.SUMMARY_COL_SIZE,
+                                                         noise_function=GeneticSummaryMultipleOptimizationMetrics.NOISE_FUNC,
+                                                         noise=GeneticSummaryMultipleOptimizationMetrics.NOISE_FACTOR,
+                                                         repeats=GeneticSummaryMultipleOptimizationMetrics.REPEAT_NOISE,
+                                                         start_condition_repeat=GeneticSummaryMultipleOptimizationMetrics.REPEAT_START_CONDITION,
+                                                         max_iter=GeneticSummaryMultipleOptimizationMetrics.MAX_ITER)
+                        # save the result in the table
+                        answer_table.add_row(row_id=str(running_index),
+                                             data={"metric": metric_name,
+                                                   "dataset": dataset_name,
+                                                   "performance": performance,
+                                                   "stability": stability})
+                        # count this, go to the next row
+                        running_index += 1
+                        # move table to file so even a break in some iteration we have the file ready up to this point
+                        answer_table.to_csv(
+                            save_path=os.path.join(GeneticSummaryMultipleOptimizationMetrics.RESULT_PATH, "genetic_multiple_optimization.csv"))
+                    except:
+                        pass
 
     def _performance_test(self,
                           metric_name: str,
