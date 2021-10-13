@@ -1,0 +1,185 @@
+# library import
+import os
+import numpy as np
+import pandas as pd
+from glob import glob
+from time import time
+
+# project import
+from ds.table import Table
+from experiments.stability_experiment import prepare_dataset
+from methods.summary_wellness_scores import SummaryWellnessScores
+from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
+
+
+class StabilityConceptDriftTest:
+    """
+    This class manage the experiment where we add 
+    """
+
+    MARKERS = ["o", "^", "P", "s", "*", "+", "X", "D", "d"]
+    COLORS = ["black", "blue", "red", "green", "yellow", "purple", "orange", "gray", "peru", "aqua", "violet", "crimson", "indigo", "lime", "darkolivegreen"]
+
+    DATASETS = {os.path.basename(path).replace(".csv", ""): prepare_dataset(pd.read_csv(path))
+                for path in glob(os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "*.csv"))}
+
+    METRICS = {
+        "entropy": SummaryWellnessScores.mean_entropy,
+        "coefficient_of_anomaly": SummaryWellnessScores.coefficient_of_anomaly,
+        "coefficient_of_variation": SummaryWellnessScores.coefficient_of_variation
+    }
+
+    # STABILITY TEST FACTORS
+    NOISE_FUNC = SummaryWellnessScores.add_dataset_subset_pick_noise
+    NOISE_FACTOR = 0.05
+    REPEAT_NOISE = 3
+    REPEAT_START_CONDITION = 3
+    REPEAT_SUMMARY = 1
+
+    # ALGORITHM HYPER-PARAMETERS
+    MAX_ITER = 25
+    SUMMARY_ROW_SIZE = 20
+    SUMMARY_COL_SIZE = 5
+
+    # IO VALUES #
+    RESULT_FOLDER_NAME = "stability_concept_drift"
+    RESULT_PATH = os.path.join(os.path.dirname(__file__), RESULT_FOLDER_NAME)
+
+    # END - IO VALUES #
+
+    def __init__(self):
+        self.summaries = []
+
+    def run(self):
+        """
+        Single entry point, writing the results to csvs
+        """
+        # make sure we have the folder for the answers
+        try:
+            os.mkdir(StabilityConceptDriftTest.RESULT_PATH)
+        except Exception as error:
+            pass
+        answer_table = Table(
+            columns=["dataset", "metric", "performance", "stability"],
+            rows_ids=[str(i) for i in range(len(StabilityConceptDriftTest.DATASETS) *
+                                            len(StabilityConceptDriftTest.METRICS) *
+                                            StabilityConceptDriftTest.REPEAT_SUMMARY
+                                            # the algorithm is stochastic, so get several outcomes
+                                            )])
+        running_index = 0
+        start_exp_time = time()
+        for metric_name, metric in StabilityConceptDriftTest.METRICS.items():
+            for dataset_name, dataset in StabilityConceptDriftTest.DATASETS.items():
+                for i in range(StabilityConceptDriftTest.REPEAT_SUMMARY):
+                    print("Working metric = {}, dataset = {}, finised {} iteration during {} seconds".format(
+                        metric_name,
+                        dataset_name,
+                        running_index,
+                        time() - start_exp_time))
+                    # run the performance metric
+                    try:
+                        performance = self._performance_test(
+                            metric_name=metric_name,
+                            dataset_name=dataset_name,
+                            dataset=dataset,
+                            algo=GeneticSummary,
+                            metric=metric,
+                            desired_row_size=StabilityConceptDriftTest.SUMMARY_ROW_SIZE,
+                            desired_col_size=StabilityConceptDriftTest.SUMMARY_COL_SIZE,
+                            repeat=1,
+                            max_iter=StabilityConceptDriftTest.MAX_ITER)
+                        # run the stability metric
+                        stability = self._stability_test(dataset=dataset,
+                                                         algo=GeneticSummary,
+                                                         metric=metric,
+                                                         desired_row_size=StabilityConceptDriftTest.SUMMARY_ROW_SIZE,
+                                                         desired_col_size=StabilityConceptDriftTest.SUMMARY_COL_SIZE,
+                                                         noise_function=StabilityConceptDriftTest.NOISE_FUNC,
+                                                         noise=StabilityConceptDriftTest.NOISE_FACTOR,
+                                                         repeats=StabilityConceptDriftTest.REPEAT_NOISE,
+                                                         start_condition_repeat=StabilityConceptDriftTest.REPEAT_START_CONDITION,
+                                                         max_iter=StabilityConceptDriftTest.MAX_ITER)
+                        # save the result in the table
+                        answer_table.add_row(row_id=str(running_index),
+                                             data={"metric": metric_name,
+                                                   "dataset": dataset_name,
+                                                   "performance": performance,
+                                                   "stability": stability})
+                        # count this, go to the next row
+                        running_index += 1
+                        # move table to file so even a break in some iteration we have the file ready up to this point
+                        answer_table.to_csv(
+                            save_path=os.path.join(StabilityConceptDriftTest.RESULT_PATH, "genetic_multiple_optimization.csv"))
+                    except:
+                        pass
+
+    def _performance_test(self,
+                          metric_name: str,
+                          dataset_name: str,
+                          dataset,
+                          algo,
+                          metric,
+                          desired_row_size: int,
+                          desired_col_size: int,
+                          repeat: int,
+                          max_iter: int):
+        scores = []
+        for _ in range(repeat):
+            # run the summary and obtain result and coverage report
+            summary, converge_report = algo.run(dataset=dataset,
+                                                desired_row_size=desired_row_size,
+                                                desired_col_size=desired_col_size,
+                                                evaluate_score_function=metric,
+                                                is_return_indexes=False,
+                                                max_iter=max_iter)
+            # add summary to later analysis
+            self.summaries.append((summary, metric_name, dataset_name))
+            # recall this result
+            scores.append(metric(dataset=dataset, summary=summary))
+        return np.nanmean(scores)
+
+    def _stability_test(self,
+                        dataset: pd.DataFrame,
+                        algo,
+                        metric,
+                        noise_function,
+                        desired_row_size: int,
+                        desired_col_size: int,
+                        noise: float,
+                        repeats: int,
+                        start_condition_repeat: int,
+                        max_iter: int):
+        # calc baseline to compare with
+        base_line_summary, converge_report = algo.run(dataset=dataset,
+                                                      desired_row_size=desired_row_size,
+                                                      desired_col_size=desired_col_size,
+                                                      evaluate_score_function=metric,
+                                                      is_return_indexes=False,
+                                                      max_iter=max_iter)
+
+        scores = []
+        for repeat in range(repeats):
+            noised_dataset = noise_function(dataset=dataset,
+                                            noise=noise)
+            for start_condition in range(start_condition_repeat):
+                # calc summary and coverage report
+                summary, converge_report = algo.run(dataset=noised_dataset,
+                                                    desired_row_size=desired_row_size,
+                                                    desired_col_size=desired_col_size,
+                                                    evaluate_score_function=metric,
+                                                    is_return_indexes=False,
+                                                    max_iter=max_iter)
+                # calc stability score
+                try:
+                    stability_score = abs(
+                        metric(dataset=base_line_summary, summary=summary) / metric(dataset=dataset,
+                                                                                    summary=noised_dataset))
+                except:
+                    stability_score = abs(metric(dataset=base_line_summary, summary=summary))
+                scores.append(stability_score)
+        return np.nanmean(scores)
+
+
+if __name__ == '__main__':
+    exp = StabilityConceptDriftTest()
+    exp.run()
