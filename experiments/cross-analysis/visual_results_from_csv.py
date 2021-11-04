@@ -26,6 +26,8 @@ class VisualResultsFromCSV:
             save_path: str):
         df = pd.read_csv(data_path)
 
+        df = df[df["metric"] == "mean_entropy"]
+
         markers_map = {name: index for index, name in enumerate(set(list(df["metric"])))}
         colors_map = {name: index for index, name in enumerate(set(list(df["dataset"])))}
 
@@ -39,7 +41,7 @@ class VisualResultsFromCSV:
                                        elinewidth=0,
                                        capsize=2,
                                        marker=VisualResultsFromCSV.MARKERS[markers_map[row["metric"]]],
-                                       color=VisualResultsFromCSV.COLORS[colors_map[row["dataset"]]])
+                                       color="black")#VisualResultsFromCSV.COLORS[colors_map[row["dataset"]]])
             if row["metric"] not in legend:
                 legend[row["metric"]] = scatter_obj
 
@@ -55,5 +57,6 @@ class VisualResultsFromCSV:
 if __name__ == '__main__':
     VisualResultsFromCSV.run(
         data_path=os.path.join(os.path.dirname(__file__), "performance_stabiliy_large.csv"),
-        save_path=os.path.join(os.path.dirname(__file__), "performance_stabiliy_large_graph.png")
+        save_path=os.path.join(os.path.dirname(__file__),
+                               "performance_stabiliy_large_graph_mean_entropy.png")
     )
