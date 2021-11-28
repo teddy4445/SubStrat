@@ -3,8 +3,10 @@ import math
 import scipy
 import numpy as np
 import pandas as pd
-from random import random, sample
 from scipy.stats import entropy
+from random import random, sample
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.model_selection import train_test_split
 
 
 class SummaryWellnessScores:
@@ -209,6 +211,47 @@ class SummaryWellnessScores:
                                                              distance_metric=SummaryWellnessScores._l1)
 
     @staticmethod
+    def sklearn_model(dataset: pd.DataFrame,
+                      summary: pd.DataFrame,
+                      y_col: str = "target",
+                      test_size: float = 0.2,
+                      sklearn_model=None,
+                      similarity_metric=None) -> float:
+        """
+        The L1 (Manhattan) distance between the mean entropy of both the dataset and its summary
+        :param dataset: the dataset (pandas' dataframe)
+        :param summary: the summary of the dataset (pandas' dataframe)
+        :param y_col: the name of the "Y" column (str)
+        :param test_size: the portion of the test size in the ML fitting (float)
+        :param sklearn_model: a sklearn library ML model (Sklearn's Estimator)
+        :param similarity_metric: a function to get two lists of values and return float (function)
+        :return: the score between them ranging (0, inf)
+        """
+        try:
+            # if no similarity metric is given, ask the results on the test set to agree
+            if similarity_metric is None:
+                similarity_metric = SummaryWellnessScores._sklearn_answer_agreement
+            # if no model, use decision tree
+            if sklearn_model is None:
+                sklearn_model = DecisionTreeClassifier()
+            # split into train and test and train model #
+            # dataset #
+            X_train, X_test, y_train, y_test = train_test_split(dataset.drop([y_col], axis=1),
+                                                                dataset[y_col],
+                                                                test_size=test_size)
+            sklearn_model.fit(X_train, y_train)
+            dataset_y = sklearn_model.predict(y_test)
+
+            X_train, X_test, y_train, y_test = train_test_split(summary.drop([y_col], axis=1),
+                                                                summary[y_col],
+                                                                test_size=test_size)
+            sklearn_model.fit(X_train, y_train)
+            summary_y = sklearn_model.predict(y_test)
+            return similarity_metric(dataset_y, summary_y)
+        except:
+            return 0
+
+    @staticmethod
     def mean_pearson_corr(dataset: pd.DataFrame,
                           summary: pd.DataFrame) -> float:
         """
@@ -308,6 +351,11 @@ class SummaryWellnessScores:
     # END - PROPERTY FUNCTIONS #
 
     # DISTANCE FUNCTIONS #
+
+    @staticmethod
+    def _sklearn_answer_agreement(test_set_results1: list,
+                                  test_set_results2: list):
+        return sum([1 if test_set_results1[i] == test_set_results2[i] else 0 for i in range(len(test_set_results1))])/len(test_set_results1)
 
     @staticmethod
     def _l1(value1: float,
