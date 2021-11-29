@@ -52,7 +52,7 @@ class SummaryGenePopulation:
         for gene in self._genes:
             try:
                 scores.append(fitness_function(dataset, gene.get_summary(dataset=dataset)))
-            except:
+            except Exception as error:
                 scores.append(-1)
         max_score = max(scores)
         scores = [score if score != -1 else max_score + 1 for score in scores]
@@ -124,8 +124,8 @@ class SummaryGenePopulation:
 
     def mutation(self,
                  mutation_rate: float):
-        [gene.mutation(max_row_index=self._row_count,
-                       max_col_index=self._col_count,
+        [gene.mutation(max_row_index=self._row_count-1,
+                       max_col_index=self._col_count-1,
                        mutation_rate=mutation_rate)
          for gene in self._genes]
 

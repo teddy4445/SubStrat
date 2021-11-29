@@ -43,6 +43,9 @@ class SummaryGene:
         for mutations_index in range(mutation_count):
             # pick row or column
             is_row = random()
+            # if we have all columns, we can only change rows
+            if len(self._cols) == max_col_index + 1:
+                is_row = 0
             # if row
             if is_row < 0.5:
                 # pick index we want to change

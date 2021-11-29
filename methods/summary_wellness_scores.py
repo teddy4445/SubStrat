@@ -236,20 +236,22 @@ class SummaryWellnessScores:
                 sklearn_model = DecisionTreeClassifier()
             # split into train and test and train model #
             # dataset #
-            X_train, X_test, y_train, y_test = train_test_split(dataset.drop([y_col], axis=1),
+            x_train, x_test, y_train, y_test = train_test_split(dataset.drop([y_col], axis=1),
                                                                 dataset[y_col],
                                                                 test_size=test_size)
-            sklearn_model.fit(X_train, y_train)
-            dataset_y = sklearn_model.predict(y_test)
+            # train dataset model
+            sklearn_model.fit(x_train, y_train)
+            # get results
+            dataset_y = sklearn_model.predict(x_test)
 
-            X_train, X_test, y_train, y_test = train_test_split(summary.drop([y_col], axis=1),
-                                                                summary[y_col],
-                                                                test_size=test_size)
-            sklearn_model.fit(X_train, y_train)
-            summary_y = sklearn_model.predict(y_test)
-            return similarity_metric(dataset_y, summary_y)
-        except:
-            return 0
+            # train summary model
+            sklearn_model.fit(summary.drop([y_col], axis=1), summary[y_col])
+            # get results
+            summary_y = sklearn_model.predict(x_test)
+            # check how they are "similar"
+            return 1 - similarity_metric(dataset_y, summary_y)
+        except Exception as error:
+            return 1
 
     @staticmethod
     def mean_pearson_corr(dataset: pd.DataFrame,
