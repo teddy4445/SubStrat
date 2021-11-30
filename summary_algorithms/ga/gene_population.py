@@ -1,5 +1,6 @@
 # library imports
 import random
+import concurrent.futures
 
 # project imports
 from summary_algorithms.ga.gene import SummaryGene
@@ -9,6 +10,8 @@ class SummaryGenePopulation:
     """
     A data class for population of summary genes with the main GA operations on them
     """
+
+    WORKERS = 4
 
     def __init__(self,
                  row_count: int,
@@ -49,11 +52,11 @@ class SummaryGenePopulation:
                 dataset,
                 fitness_function):
         scores = []
-        for gene in self._genes:
-            try:
-                scores.append(fitness_function(dataset, gene.get_summary(dataset=dataset)))
-            except Exception as error:
-                scores.append(-1)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=SummaryGenePopulation.WORKERS) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_score = [executor.submit(fitness_function, dataset, gene) for gene in self._genes]
+            for future in concurrent.futures.as_completed(future_to_score):
+                scores.append(future.result())
         max_score = max(scores)
         scores = [score if score != -1 else max_score + 1 for score in scores]
         self._scores = scores
@@ -124,10 +127,11 @@ class SummaryGenePopulation:
 
     def mutation(self,
                  mutation_rate: float):
-        [gene.mutation(max_row_index=self._row_count-1,
-                       max_col_index=self._col_count-1,
-                       mutation_rate=mutation_rate)
-         for gene in self._genes]
+        with concurrent.futures.ThreadPoolExecutor(max_workers=SummaryGenePopulation.WORKERS) as executor:
+            # Start the load operations and mark each future with its URL
+            future_to_score = [executor.submit(gene.mutation, self._row_count-1, self._col_count-1, mutation_rate) for gene in self._genes]
+            for future in concurrent.futures.as_completed(future_to_score):
+                future.result()
 
     # end - logic #
 
