@@ -72,7 +72,6 @@ class StablerGeneticSummary(BaseSummary):
         old_pick_columns = list(range(dataset.shape[1]))
 
         while round_count <= max_iter:
-            print("Optimization step #{}".format(round_count))
             # optimize over the columns and rows
             start_rows_calc = time.time()  # just for time measurement tasks
             start_cols_calc = time.time()  # just for time measurement tasks
