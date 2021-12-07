@@ -111,9 +111,11 @@ class AutoSKlearnExperiment:
             for metric_name, metric in AutoSKlearnExperiment.METRICS.items():
                 try:
                     print("Start: {} with {}".format(dataset_name, metric_name))
-
+                    # split data
                     x, y = dataset.drop([target_feature_name], axis=1), dataset[target_feature_name]
-                    best_rows, best_columns, converge_report = StablerGeneticSummary.run(dataset=dataset,
+                    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_portion, random_state=73)
+                    # get sub-table (summary)
+                    best_rows, best_columns, converge_report = StablerGeneticSummary.run(dataset=x_train,
                                                                                          desired_row_size=round(
                                                                                              math.sqrt(dataset.shape[0])),
                                                                                          desired_col_size=round(
@@ -127,9 +129,6 @@ class AutoSKlearnExperiment:
                     if dataset.shape[1] - 1 not in best_columns:
                         best_columns.append(dataset.shape[1] - 1)
                     summary = dataset.iloc[best_rows, best_columns]
-
-                    # split all
-                    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_portion, random_state=73)
 
                     # full data learning
                     full_data_start = time()
@@ -161,7 +160,7 @@ class AutoSKlearnExperiment:
                     summary_end = time()
 
                     # compute answer and save it
-                    answer[dataset_name][metric_name] = (full_data_end - full_data_start, summary_end - summary_start, full_data_acc, summary_acc)
+                    answer[dataset_name][metric_name] = ((full_data_end - full_data_start) * 50, (summary_end - summary_start) * 11, full_data_acc, summary_acc)
 
                     # safe the results at each point we need
                     with open(os.path.join(AutoSKlearnExperiment.RESULT_PATH, "raw_data.json"), "w") as answer_file_json:
@@ -170,6 +169,19 @@ class AutoSKlearnExperiment:
                                   indent=2)
                 except Exception as error:
                     print("Skipping this dataset {}".format(error))
+
+        # safe the results at each point we need
+        with open(os.path.join(AutoSKlearnExperiment.RESULT_PATH, "raw_data.csv"), "w") as answer_file_csv:
+            csv_answer = "dataset,metric,full_time_sec,full_accuracy,subtable_time_sec,subtable_accuracy\n"
+            for dataset in answer.keys():
+                for metric in answer[dataset].keys():
+                    csv_answer += "{},{},{:.4f},{:.4f},{:.4f},{:.4f}\n".format(dataset,
+                                                                               metric,
+                                                                               answer[dataset][metric][0],
+                                                                               answer[dataset][metric][2],
+                                                                               answer[dataset][metric][1],
+                                                                               answer[dataset][metric][3])
+            answer_file_csv.write(csv_answer)
 
         # organize the results differently
         nice_answer = []
@@ -187,6 +199,9 @@ class AutoSKlearnExperiment:
                         marker=AutoSKlearnExperiment.MARKERS[val[1]])
         plt.xlabel("Relative change in computation time [t]")
         plt.ylabel("Relative change in performance [1]")
+        plt.xlim((0, 1))
+        plt.ylim((-0.2, 1))
+        plt.grid(alpha=0.2, color="black")
         plt.savefig(os.path.join(AutoSKlearnExperiment.RESULT_PATH, "results.png"))
         plt.close()
 
