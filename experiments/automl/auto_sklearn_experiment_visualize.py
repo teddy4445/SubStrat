@@ -110,8 +110,8 @@ class AutoSKlearnExperimentVisualize:
                     color=[AutoSKlearnExperimentVisualize.COLORS[name] for name in df["dataset"]])
         plt.xlabel("Relative change in computation time in minutes [t]")
         plt.ylabel("Relative change in performance [1]")
-        plt.xlim((-5, 1))
-        plt.ylim((-0.2, 1))
+        plt.xlim((-0.5, 1))
+        plt.ylim((-0.1, 1))
         plt.grid(alpha=0.2, color="black")
         plt.savefig(os.path.join(AutoSKlearnExperimentVisualize.RESULT_PATH, "results_pipeline_scatter.png"))
         plt.close()
@@ -122,10 +122,23 @@ class AutoSKlearnExperimentVisualize:
                     color=[AutoSKlearnExperimentVisualize.COLORS[name] for name in df["dataset"]])
         plt.xlabel("Relative change in computation time in minutes [t]")
         plt.ylabel("Relative change in performance [1]")
-        plt.xlim((0, 0.4))
-        plt.ylim((-0.1, 0.1))
+        plt.xlim((0, 1))
+        plt.ylim((-0.05, 0.05))
         plt.grid(alpha=0.2, color="black")
         plt.savefig(os.path.join(AutoSKlearnExperimentVisualize.RESULT_PATH, "results_pipeline_scatter_zoom_in.png"))
+        plt.close()
+
+        # zoom in
+        plt.scatter((df["full_time_min"] - df["subtable_time_min"]),
+                    (df[full_metric_name] - df[subtable_metric_name]),
+                    color=[AutoSKlearnExperimentVisualize.COLORS[name] for name in df["dataset"]])
+        plt.xlabel("Absolute change in computation time in minutes [t]")
+        plt.ylabel("Absolute change in performance [1]")
+        plt.yticks([-0.01,0,0.01,0.02,0.03],[-0.01,0,0.01,0.02,0.03])
+        plt.xticks([-10 + i * 10 for i in range(12)], [-10 + i * 10 for i in range(12)])
+        plt.xlim((-10, 100))
+        plt.grid(alpha=0.2, color="black")
+        plt.savefig(os.path.join(AutoSKlearnExperimentVisualize.RESULT_PATH, "absolute_results_pipeline_scatter_zoom_in.png"))
         plt.close()
 
 

@@ -60,7 +60,6 @@ class AutoSKlearnFullPipelineExperiment:
     REPEAT_SUMMARY = 5
 
     # ALGORITHM HYPER-PARAMETERS
-    MAX_ITER = 25
     SUMMARY_ROW_SIZE = 20
     SUMMARY_COL_SIZE = 5
     NAIVE_TIMES = 10
@@ -85,13 +84,34 @@ class AutoSKlearnFullPipelineExperiment:
                 AutoSKlearnFullPipelineExperiment.run(target_feature_name=target_feature_name,
                                                       test_portion=test_portion,
                                                       auto_ml_method=auto_ml_method,
+                                                      summary_generations=25,
                                                       row_portion=row_portion/10,
                                                       col_portion=col_portion/10)
+
+    @staticmethod
+    def generation_analysis(target_feature_name: str = "target",
+                            test_portion: float = 0.1,
+                            auto_ml_method: str = "tpot"):
+        answer = "generation,avg_relative_time_change,avg_absolute_time_change,avg_relative_acc,avg_absolute_acc\n"
+        for i in range(9):
+            summary_generations = 10 + i * 5
+            df = AutoSKlearnFullPipelineExperiment.run(target_feature_name=target_feature_name,
+                                                       test_portion=test_portion,
+                                                       auto_ml_method=auto_ml_method,
+                                                       summary_generations=summary_generations)
+            # compute the results
+            answer += "{},{},{},{},{}\n".format(summary_generations,
+                                          ((df["full_time_min"] - df["subtable_time_min"])/df["full_time_min"]).mean(),
+                                          (df["full_time_min"] - df["subtable_time_min"]).mean(),
+                                          ((df["full_accuracy"] - df["subtable_accuracy"])/df["full_accuracy"]).mean(),
+                                          (df["full_accuracy"] - df["subtable_accuracy"]).mean())
+
 
     @staticmethod
     def run(target_feature_name: str = "target",
             auto_ml_method: str = "tpot",
             test_portion: float = 0.1,
+            summary_generations: int = 25,
             row_portion: float = 0,
             col_portion: float = 0):
         # make sure we have the folder for the answers
@@ -141,7 +161,7 @@ class AutoSKlearnFullPipelineExperiment:
                                                                                              1] * col_portion),
                                                                                      evaluate_score_function=AutoSKlearnFullPipelineExperiment.METRIC,
                                                                                      is_return_indexes=True,
-                                                                                     max_iter=AutoSKlearnFullPipelineExperiment.MAX_ITER)
+                                                                                     max_iter=summary_generations)
                 # get the summary
                 best_columns_x = best_columns.copy()
                 if dataset.shape[1] - 1 not in best_columns:
@@ -230,6 +250,9 @@ class AutoSKlearnFullPipelineExperiment:
                                                         answer[dataset][6],
                                                         answer[dataset][7])
             answer_file_csv.write(csv_answer)
+
+        # read the table for more analysis
+        return pd.read_csv(os.path.join(AutoSKlearnFullPipelineExperiment.RESULT_PATH, "full_pipeline_raw_data-{}.csv".format(auto_ml_method)))
 
 
 if __name__ == '__main__':
