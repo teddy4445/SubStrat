@@ -14,16 +14,23 @@ try:
     import autosklearn.classification
 except:
     pass
+try:
+    from tpot import TPOTClassifier
+    from sklearn.pipeline import make_pipeline
+    from tpot.builtins import StackingEstimator
+    from tpot.export_utils import set_param_recursive
+except:
+    pass
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import HalvingRandomSearchCV
+# from sklearn.model_selection import HalvingRandomSearchCV
 
 # project imports
 from ds.table import Table
 from methods.summary_wellness_scores import SummaryWellnessScores
 from experiments.automl.auto_sklearn_experiment import prepare_dataset_full
-from summary_algorithms.stabler_genetic_algorithm_summary_algorithm import StablerGeneticSummary
+from summary_algorithms.genetic_algorithm_summary_algorithm import GeneticSummary
 
 # so the colors will be the same
 random.seed(73)
@@ -71,16 +78,19 @@ class AutoSKlearnFullPipelineExperiment:
 
     @staticmethod
     def run_grid(target_feature_name: str = "target",
-                 test_portion: float = 0.1):
+                 test_portion: float = 0.1,
+                 auto_ml_method: str = "tpot"):
         for row_portion in range(1, 11):
             for col_portion in range(1, 11):
                 AutoSKlearnFullPipelineExperiment.run(target_feature_name=target_feature_name,
                                                       test_portion=test_portion,
+                                                      auto_ml_method=auto_ml_method,
                                                       row_portion=row_portion/10,
                                                       col_portion=col_portion/10)
 
     @staticmethod
     def run(target_feature_name: str = "target",
+            auto_ml_method: str = "tpot",
             test_portion: float = 0.1,
             row_portion: float = 0,
             col_portion: float = 0):
@@ -102,7 +112,10 @@ class AutoSKlearnFullPipelineExperiment:
 
                 # full data learning
                 try:
-                    cls = autosklearn.classification.AutoSklearnClassifier()
+                    if auto_ml_method == "tpot":
+                        cls = TPOTClassifier(generations=100, population_size=100, random_state=73)
+                    else:
+                        cls = autosklearn.classification.AutoSklearnClassifier()
                 except Exception as error:
                     cls = DecisionTreeClassifier()
                 cls.fit(x_train, y_train)
@@ -114,7 +127,7 @@ class AutoSKlearnFullPipelineExperiment:
 
                 # get sub-table (summary)
                 summary_start = time()
-                best_rows, best_columns, converge_report = StablerGeneticSummary.run(dataset=x_train,
+                best_rows, best_columns, converge_report = GeneticSummary.run(dataset=x_train,
                                                                                      desired_row_size=round(math.sqrt(
                                                                                          dataset.shape[
                                                                                              0])) if row_portion == 0 else round(
@@ -143,19 +156,27 @@ class AutoSKlearnFullPipelineExperiment:
                                                                                                     random_state=73)
 
                 try:
-                    cls = autosklearn.classification.AutoSklearnClassifier()
+                    if auto_ml_method == "tpot":
+                        cls = TPOTClassifier(generations=100, population_size=100, random_state=73)
+                    else:
+                        cls = autosklearn.classification.AutoSklearnClassifier()
                 except Exception as error:
                     cls = DecisionTreeClassifier()
                 cls.fit(x_train_summary, y_train_summary)
                 # try again but this time only with the right classifier
                 try:
-                    cls = autosklearn.classification.AutoSklearnClassifier(
-                        include={
-                            'classifier': [cls.show_models().split(",")[0]]
-                        },
-                        exclude=None
-                    )
-                    cls.fit(x_train_summary, y_train_summary)
+                    if auto_ml_method == "tpot":
+                        cls = make_pipeline(StackingEstimator(estimator=cls.best_model_))
+                        set_param_recursive(cls.steps, 'random_state', 73)
+                        cls.fit(x_train_summary, y_train_summary)
+                    else:
+                        cls = autosklearn.classification.AutoSklearnClassifier(
+                            include={
+                                'classifier': [cls.show_models().split(",")[0]]
+                            },
+                            exclude=None
+                        )
+                        cls.fit(x_train_summary, y_train_summary)
                 except:
                     pass
                 try:
@@ -181,7 +202,7 @@ class AutoSKlearnFullPipelineExperiment:
                                         summary_auc)
 
                 # safe the results at each point we need
-                with open(os.path.join(AutoSKlearnFullPipelineExperiment.RESULT_PATH, "raw_data.json"),
+                with open(os.path.join(AutoSKlearnFullPipelineExperiment.RESULT_PATH, "raw_data-{}.json".format(auto_ml_method)),
                           "w") as answer_file_json:
                     json.dump(answer,
                               answer_file_json,
@@ -190,7 +211,7 @@ class AutoSKlearnFullPipelineExperiment:
                 print("Skipping this dataset {}".format(error))
 
         # safe the results at each point we need
-        with open(os.path.join(AutoSKlearnFullPipelineExperiment.RESULT_PATH, "full_pipeline_raw_data.csv"), "w") as answer_file_csv:
+        with open(os.path.join(AutoSKlearnFullPipelineExperiment.RESULT_PATH, "full_pipeline_raw_data-{}.csv".format(auto_ml_method)), "w") as answer_file_csv:
             csv_answer = "dataset,full_time_min,subtable_time_min" \
                          ",full_accuracy,subtable_accuracy" \
                          ",full_f1,subtable_f1" \

@@ -25,10 +25,14 @@ S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of 
 3. Put the relevant data (columns and file format are shown in the bottom of this file).
 4. run the project from the **main.py** file (python main.py or python3 main.py)
 
+* The "/experiments" contains a set of experiments to analyze the algorithms and some included in the manuscript.
+
 <a name="data"/>
 
 ## Data 
-At the current state, we are using five datasets that can be found in the "/data" folder:
+At the current state, we are using 25 datasets that can be found in the "/data" and "/big_data" folders.
+The datasets in the "./data" folder are small (< 100K data points) and the datasets in the "./big_data" folder are large (> 100K data points).
+Samples fof the datasets:
 - **dataset_1_birds_sings.csv**: birds singing dataset from Kaggle.
 - **dataset_2_headech_prodrom.csv**: clinical headache prodrom experiment from an clinical company.
 - **dataset_3_liver-disorders.csv**: liver disorders clinical data from Kaggle.
@@ -40,11 +44,23 @@ The idea is to examine the summary performance on numerical (categorical data tr
 <a name="algorithm"/>
 
 ## Algorithm 
-### Greedy algorithm
+### Greedy algorithm (all rows, all columns)
 One can treat the dataset summary task as a double feature selection (FS) problem.
 Namely, selecting (n) out of (N) features from (D) and (m) out of (M) features from (D.transpose()), respectively. 
 Assuming unknown connection between the rows and columns of matrix (D), we can run a greedy algorithm on the each of of them in a turn.
 Using the best result from the last iteration, in the following. This way, receiving an (local) optimal result. 
+
+### Greedy algorithm (row-col iterations)
+
+### Brute-Force algorithm 
+
+### Kmeans-based algorithm 
+
+### Las Vegas algorithm 
+
+### Genetic algorithm 
+
+#### More-stable Genetic algorithm 
 
 <a name="files"/>
 
@@ -69,6 +85,8 @@ Using the best result from the last iteration, in the following. This way, recei
 - scikit-learn         0.24.1
 - seaborn              0.11.1
 - opencv-python        4.5.3
+- TPOT                 0.11.7
 - scipy                latest
+- auto-sklearn         latest
 
 These can be found in the **requirements.txt** and easily installed using the "pip install requirements.txt" command in your terminal. 
