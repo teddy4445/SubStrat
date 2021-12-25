@@ -93,8 +93,8 @@ class AutoSKlearnFullPipelineExperiment:
                             test_portion: float = 0.1,
                             auto_ml_method: str = "tpot"):
         answer = "generation,avg_relative_time_change,avg_absolute_time_change,avg_relative_acc,avg_absolute_acc\n"
-        for i in range(9):
-            summary_generations = 10 + i * 5
+        for i in range(11):
+            summary_generations = i * 5
             df = AutoSKlearnFullPipelineExperiment.run(target_feature_name=target_feature_name,
                                                        test_portion=test_portion,
                                                        auto_ml_method=auto_ml_method,
