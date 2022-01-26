@@ -20,6 +20,7 @@ class PaperPlots:
         """
         Plot all the figures for the paper from the results of the experiments
         """
+
         #PaperPlots.ga_generation_plot()
         PaperPlots.heatmap_one_d()
         PaperPlots.heatmap_one_d_time()

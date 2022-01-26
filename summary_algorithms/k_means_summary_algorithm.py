@@ -45,7 +45,7 @@ class KmeansSummary(BaseSummary):
         """
         # make sure we have steps to run
         if max_iter < 1:
-            raise Exception("Error at LasVegasSummary.run: the max_iter argument must be larger than 1")
+            raise Exception("Error at KmeansSummary.run: the max_iter argument must be larger than 1")
 
         # break dataset into rows
         samples = dataset.values.tolist()

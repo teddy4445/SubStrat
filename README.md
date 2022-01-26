@@ -86,6 +86,7 @@ Using the best result from the last iteration, in the following. This way, recei
 - seaborn              0.11.1
 - opencv-python        4.5.3
 - TPOT                 0.11.7
+- slots                0.4.0
 - scipy                latest
 - auto-sklearn         latest
 
