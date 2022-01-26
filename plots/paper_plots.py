@@ -4,6 +4,7 @@ import math
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import scipy.stats as st
 import matplotlib.pyplot as plt
 
 
@@ -20,7 +21,6 @@ class PaperPlots:
         """
         Plot all the figures for the paper from the results of the experiments
         """
-
         #PaperPlots.ga_generation_plot()
         PaperPlots.heatmap_one_d()
         PaperPlots.heatmap_one_d_time()
@@ -39,23 +39,27 @@ class PaperPlots:
         time_data = [[(1-val/88.46) for val in row]for row in time_data]
         means = np.nanmean(time_data, axis=1)
         stds = np.nanstd(time_data, axis=1)
+        confidence = 0.99
+        conf_int = [st.t.interval(confidence, len(row) - 1, loc=np.mean(row), scale=st.sem(row)) for row in time_data]
+        conf_int = [(val[1]-val[0])/2 for val in conf_int]
         ds_sizes = [129880, 15300, 1000, 10000, 8125, 57660, 7000, 1700, 795401, 1000000, 17415]
         n = sum(ds_sizes) / len(ds_sizes)
         x = [round(math.log(n)), round(math.sqrt(n)), round(0.01 * n), round(0.05 * n), round(0.1 * n), round(0.25 * n),
              round(0.5 * n), round(n)]
-        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01nv (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
+        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01n$ (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
                  "$n$ ("]
         ax = plt.subplot(111)
         plt.errorbar(x=x,
                      y=means,
-                     yerr=stds,
+                     yerr=conf_int,
                      fmt="-o",
                      color="black",
                      linewidth=2,
                      markersize=6,
                      capsize=2)
         plt.ylim((0, 1))
-        plt.xlabel("Portion of samples")
+        plt.xscale('log')
+        plt.xlabel("Portion of samples (log scale)")
         plt.ylabel("Average reduction in computation time")
         plt.grid(alpha=0.1,
                  color="black")
@@ -70,11 +74,14 @@ class PaperPlots:
 
         means = np.nanmean(time_data, axis=0)
         stds = np.nanstd(time_data, axis=0)
+        confidence = 0.99
+        conf_int = [st.t.interval(confidence, len(row) - 1, loc=np.mean(row), scale=st.sem(row)) for row in time_data]
+        conf_int = [(val[1]-val[0])/2 for val in conf_int]
         ds_sizes = [23, 5, 171, 18, 23, 7, 9, 15, 123, 7, 15]
         n = sum(ds_sizes) / len(ds_sizes)
         x = [round(math.log(n)), round(math.sqrt(n)), 1, round(0.05 * n), round(0.1 * n), round(0.25 * n),
              round(0.5 * n), round(n)]
-        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01nv (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
+        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01n$ (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
                  "$n$ ("]
         new_x = [(x[index], names[index]) for index in range(len(x))]
         new_x = sorted(new_x, key=lambda x: x[0])
@@ -83,14 +90,15 @@ class PaperPlots:
         ax = plt.subplot(111)
         plt.errorbar(x=x,
                      y=means,
-                     yerr=stds,
+                     yerr=conf_int,
                      fmt="-o",
                      color="black",
                      linewidth=2,
                      markersize=6,
                      capsize=2)
         plt.ylim((0, 1))
-        plt.xlabel("Portion of features")
+        plt.xscale('log')
+        plt.xlabel("Portion of features (log scale)")
         plt.ylabel("Average reduction in computation time")
         plt.grid(alpha=0.1,
                  color="black")
@@ -116,23 +124,27 @@ class PaperPlots:
         acc_data = [[0.7 - val for val in row] for row in acc_data]
         means = np.nanmean(acc_data, axis=1)
         stds = np.nanstd(acc_data, axis=1)
+        confidence = 0.99
+        conf_int = [st.t.interval(confidence, len(row) - 1, loc=np.mean(row), scale=st.sem(row)) for row in acc_data]
+        conf_int = [(val[1]-val[0])/2 for val in conf_int]
         ds_sizes = [129880, 15300, 1000, 10000, 8125, 57660, 7000, 1700, 795401, 1000000, 17415]
         n = sum(ds_sizes) / len(ds_sizes)
         x = [round(math.log(n)), round(math.sqrt(n)), round(0.01 * n), round(0.05 * n), round(0.1 * n), round(0.25 * n),
              round(0.5 * n), round(n)]
-        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01nv (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
+        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01n$ (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
                  "$n$ ("]
         ax = plt.subplot(111)
         plt.errorbar(x=x,
                      y=means,
-                     yerr=stds,
+                     yerr=conf_int,
                      fmt="-o",
                      color="black",
                      linewidth=2,
                      markersize=6,
                      capsize=2)
-        plt.ylim((0, 0.3))
-        plt.xlabel("Portion of samples")
+        plt.ylim((0, 1))
+        plt.xscale('log')
+        plt.xlabel("Portion of samples (log scale)")
         plt.ylabel("Average reduction in accuracy")
         plt.grid(alpha=0.1,
                  color="black")
@@ -147,11 +159,14 @@ class PaperPlots:
 
         means = np.nanmean(acc_data, axis=0)
         stds = np.nanstd(acc_data, axis=0)
+        confidence = 0.90
+        conf_int = [st.t.interval(confidence, len(row) - 1, loc=np.mean(row), scale=st.sem(row)) for row in acc_data]
+        conf_int = [(val[1]-val[0])/2 for val in conf_int]
         ds_sizes = [23, 5, 171, 18, 23, 7, 9, 15, 123, 7, 15]
         n = sum(ds_sizes) / len(ds_sizes)
         x = [round(math.log(n)), round(math.sqrt(n)), 1, round(0.05 * n), round(0.1 * n), round(0.25 * n),
              round(0.5 * n), round(n)]
-        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01nv (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
+        names = ["$log_2 (n)$ (", "$\sqrt{n}$ (", "$0.01n$ (", "$0.05n$ (", "$0.1n$ (", "$0.25n$ (", "$0.5n$ (",
                  "$n$ ("]
         new_x = [(x[index], names[index]) for index in range(len(x))]
         new_x = sorted(new_x, key=lambda x: x[0])
@@ -160,14 +175,15 @@ class PaperPlots:
         ax = plt.subplot(111)
         plt.errorbar(x=x,
                      y=means,
-                     yerr=stds,
+                     yerr=conf_int,
                      fmt="-o",
                      color="black",
                      linewidth=2,
                      markersize=6,
                      capsize=2)
-        plt.ylim((0, 0.3))
-        plt.xlabel("Portion of features")
+        plt.ylim((0, 1))
+        plt.xscale('log')
+        plt.xlabel("Portion of features (log scale)")
         plt.ylabel("Average reduction in accuracy")
         plt.grid(alpha=0.1,
                  color="black")
