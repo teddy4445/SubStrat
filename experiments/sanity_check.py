@@ -40,18 +40,16 @@ class SanityCheck:
             # calc score
             ds_score = SummaryWellnessScores._mean_entropy(df)
             answer += "{:.3f},".format(ds_score)
-            print("Dataset {} score: {:.3f}".format(name, ds_score))
             # calc data subset (summary)
-            summary = GeneticSummary.run(dataset=df,
-                                         desired_row_size=round(math.sqrt(df.shape[0])),
-                                         desired_col_size=round(df.shape[1] * 0.25),
-                                         evaluate_score_function=SummaryWellnessScores.mean_entropy,
-                                         is_return_indexes=False,
-                                         max_iter=30)
+            summary, cr = GeneticSummary.run(dataset=df,
+                                             desired_row_size=round(math.sqrt(df.shape[0])),
+                                             desired_col_size=round(df.shape[1] * 0.25),
+                                             evaluate_score_function=SummaryWellnessScores.mean_entropy,
+                                             is_return_indexes=False,
+                                             max_iter=1)
             # calc the summary's score
             summary_score = SummaryWellnessScores._mean_entropy(summary)
             answer += "{:.3f},".format(summary_score)
-            print("Dataset {} summary score: {:.3f}".format(name, summary_score))
             # calc pipeline thing
             AutoSKlearnExperiment.run(target_feature_name="target")
             answer += "\n"
