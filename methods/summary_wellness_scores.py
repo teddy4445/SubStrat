@@ -3,6 +3,7 @@ import math
 import scipy
 import numpy as np
 import pandas as pd
+from collections import Counter
 from scipy.stats import entropy
 from random import random, sample
 from sklearn.tree import DecisionTreeClassifier
@@ -318,7 +319,10 @@ class SummaryWellnessScores:
         :param matrix: the matrix we want to evaluate
         :return: the mean entropy of the matrix columns (features)
         """
-        return np.nanmean([entropy(matrix[col]) for col in list(matrix)])
+        try:
+            return np.nanmean([entropy(list(Counter(matrix[col]).values()), base=2) for col in list(matrix)])
+        except:
+            return np.nanmean([entropy(matrix[col], base=2) for col in list(matrix)])
 
     @staticmethod
     def _matrix_mean_pearson_correlation(matrix: pd.DataFrame):

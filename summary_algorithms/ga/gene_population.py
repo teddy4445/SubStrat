@@ -54,7 +54,7 @@ class SummaryGenePopulation:
         scores = []
         with concurrent.futures.ThreadPoolExecutor(max_workers=SummaryGenePopulation.WORKERS) as executor:
             # Start the load operations and mark each future with its URL
-            future_to_score = [executor.submit(fitness_function, dataset, gene) for gene in self._genes]
+            future_to_score = [executor.submit(fitness_function, dataset, gene.get_summary(dataset)) for gene in self._genes]
             for future in concurrent.futures.as_completed(future_to_score):
                 scores.append(future.result())
         max_score = max(scores)
