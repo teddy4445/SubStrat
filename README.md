@@ -1,7 +1,10 @@
-# Stability Feature Selection Dataset Summary
+# SubStrat: Faster AutoML with Measure-Preserving Data Subsets
+Automated machine learning (AutoML) frameworks have become important  tools in the data scientists' arsenal, as they dramatically reduce the manual work devoted to the construction of ML pipelines.
+Such frameworks intelligently search among millions of possible configurations of feature engineering steps, model selection and hyper-parameters tuning options, to finally output an optimal pipeline in terms of predictive accuracy. 
 
-In this project, we obtain a "good" summary of a dataset based on the approach of stable feature selection.
-We define a summary to be a "good" summary if it is both stable and optimize some condition we would like to preserve in a dataset.
+However, when the dataset is large, each individual configuration takes longer to execute, therefore the overall AutoML running times become increasingly high.
+In this work we present SubStrat, an AutoML optimization strategy that tackles the data size, rather than configuration space. 
+It wraps existing AutoML tools, and instead of execute them on directly on the entire dataset, SubStrat uses a genetic-based algorithm to find a small yet representative \textit{data subset} which preserves a characteristic of the original one. It then employs the AutoML tool on the small subset, and finally, it refines the resulted pipeline by executing a restricted, much shorter, AutoML process on the large dataset.
 
 The project aims to answer an instance of the following general task:
 Given a matrix (D := (R, C)) and a fitness function (F) such that D has |R| = M rows and |C| = N columns, 
@@ -9,9 +12,13 @@ and F: D -> |R. In addition, given 0 < m << M and 0 < n << N, the sizes of the s
 We wish to find subsets in sizes (m, n) such that:
 S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of the matrix D.
 
+We used the outcome of this task as part of time and resource optimization process in an autoML context. Namely, we find a data subset of the original dataset, compute autoML using the small matrix and fine-tune the resulted model's hyperparameters using the autoML tool on the entire dataset. 
+
 ### Table of Contents
 1. [Usage](#usage)
 2. [Data](#data)
+3. [Experiments](#experiments)
+4. [Algorithm](#algorithm)
 3. [Files structure](#files)
 4. [Dependencies](#dependancies)
 
@@ -29,29 +36,34 @@ S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of 
 <a name="data"/>
 
 ## Data 
-At the current state, we are using 25 datasets that can be found in the "/data" and "/big_data" folders.
-The datasets in the "./data" folder are small (< 100K data points) and the datasets in the "./big_data" folder are large (> 100K data points).
-Samples fof the datasets:
-- **dataset_1_birds_sings.csv**: birds singing dataset from Kaggle.
-- **dataset_2_headech_prodrom.csv**: clinical headache prodrom experiment from an clinical company.
-- **dataset_3_liver-disorders.csv**: liver disorders clinical data from Kaggle.
-- **dataset_4_mfeat-morphological.csv**: not sure about this one.
-- **dataset_5_page-blocks.csv**: A page blocks analysis dataset from Kaggle.
-
+At the current state, we are using 10 datasets that can be found in the "/big_data" folder.
 The idea is to examine the summary performance on numerical (categorical data treated as numerical) datasets.
 
-<a name="files"/>
+The data is from Kaggle and ICU. We tried to gather data from different fields, sizes, and distrebutions, links to the datasets are provided below:
 
-## Files Structure
-- **main.py**: Manage the running of the simulation with analysis of results for the paper and IO operations. This is used as a first attempt on the algorithm.
-- **summary_process_score_functions.py**: A static class with methods for scoring dataset's summary.
-- **movie_from_images_maker.py**: This class responsible for making videos from sequences of images.
-- **greedy_summary_algorithm.py**: This class is a wrapper over the greedy summary algorithm.
-- **analysis_converge_process.py**: This class analyze and plot the converge process of a summary algorithm.
-- **summary_wellness_scores.py**: A static class with methods for evaluating the wellness of a summary.
-- **multi_score_multi_ds_experiment.py**: This class generates a summary table of a summary's algorithm performance over multiple score functions, datasets, and summary sizes.
-- **table.py**: A simple table class, allowing to populate pandas' dataframe object in an easy way for this programmer.
-- **converge_report.py**: A class responsible to store and provide analysis on a summary's algorithm converge process.
+1. Dataset #1 - https://www.kaggle.com/chronicenigma/airline-passenger-satisfaction-classification?scriptVersionId=59340276
+2. Dataset #2 - https://www.kaggle.com/lazebnik4445/general-signal-processing
+3. Dataset #3 - https://www.kaggle.com/ratnadeepgawade/carinsurancedata
+4. Dataset #4 - https://www.kaggle.com/sahistapatel96/mushroom-classification
+5. Dataset #5 - https://www.kaggle.com/lazebnik4445/air-quality
+6. Dataset #6 - https://www.kaggle.com/kadirduran/bike-demand-visualization
+7. Dataset #7 - https://www.kaggle.com/lazebnik4445/lead-generation-form
+8. Dataset #8 - https://archive.ics.uci.edu/ml/datasets/Myocardial+infarction+complications
+9. Dataset #9 - https://www.kaggle.com/lazebnik4445/heart-disease
+10. Dataset #10 - https://archive.ics.uci.edu/ml/datasets/Poker+Hand
+
+<a name="experiments"/>
+
+## experiments
+Given an input dataset and a target feature, we first directly employ an AutoML tool and obtain its output ML pipeline configuration.
+Recall that the AutoML tools (we use the popular AutoSklearn and TPOT frameworks, as described below) apply sophisticated algorithms to prune non-promising ML pipeline configurations, and finally output the pipeline with the highest predictive accuracy on the specified target feature. 
+We record both the running time and the accuracy of the resulted model, which serve as our primary baseline, denoted Full-AutoML. We then examine whether our subset based strategy can indeed reduce AutoML running times, and still generate ML pipelines as accurate as Full-AutoML. 
+To generate the data subsets, we used \algo{} as well as 10 other baselines. For each instance, we compute the relative running time and accuracy w.r.t Full-AutoML. We report the following metrics: \textit{time-reduction}, which indicates how much time was saved. We used 10 popular datasets from Kaggle and UCI Machine Learning Repository, as shown above. We tried to represent a wide range of domains and datasets sizes.  
+
+<a name="algorithm"/>
+
+## Algorithm 
+The algorithms can be found in the '/summary_algorithms' folder. 
 
 <a name="dependancies"/>
 
@@ -69,3 +81,14 @@ The idea is to examine the summary performance on numerical (categorical data tr
 - auto-sklearn         latest
 
 These can be found in the **requirements.txt** and easily installed using the "pip install requirements.txt" command in your terminal. 
+
+## Optimal data subset's size per algorithm
+We computed a grid search as shown in figure 4 in the manuscript for each one of the algorithms regarding the optimal data subset size. The results are as follows:
+#### SubStract: sqrt(N) and 0.25M
+#### IG-KM: sqrt(N) and 0.25M
+#### MAB: sqrt(N) and 0.25M
+#### IG-RAND: sqrt(N) and 0.25M
+#### MC-100K: sqrt(N) and 0.25M
+#### MC-100: 0.01 and 0.25M
+#### KM: sqrt(N) and 0.5M
+After obtaining these hyperparameters, the other (spesific) hyperparameters, if any, of each algorithm is found on 5 option grid-search approach such that the values to check picked manually. 
