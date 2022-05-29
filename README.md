@@ -12,9 +12,8 @@ S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of 
 ### Table of Contents
 1. [Usage](#usage)
 2. [Data](#data)
-3. [Algorithm](#algorithm)
-4. [Files structure](#files)
-5. [Dependencies](#dependancies)
+3. [Files structure](#files)
+4. [Dependencies](#dependancies)
 
 <a name="usage"/>
 
@@ -40,27 +39,6 @@ Samples fof the datasets:
 - **dataset_5_page-blocks.csv**: A page blocks analysis dataset from Kaggle.
 
 The idea is to examine the summary performance on numerical (categorical data treated as numerical) datasets.
-
-<a name="algorithm"/>
-
-## Algorithm 
-### Greedy algorithm (all rows, all columns)
-One can treat the dataset summary task as a double feature selection (FS) problem.
-Namely, selecting (n) out of (N) features from (D) and (m) out of (M) features from (D.transpose()), respectively. 
-Assuming unknown connection between the rows and columns of matrix (D), we can run a greedy algorithm on the each of of them in a turn.
-Using the best result from the last iteration, in the following. This way, receiving an (local) optimal result. 
-
-### Greedy algorithm (row-col iterations)
-
-### Brute-Force algorithm 
-
-### Kmeans-based algorithm 
-
-### Las Vegas algorithm 
-
-### Genetic algorithm 
-
-#### More-stable Genetic algorithm 
 
 <a name="files"/>
 
