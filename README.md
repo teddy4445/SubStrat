@@ -1,38 +1,36 @@
 # SubStrat: Faster AutoML with Measure-Preserving Data Subsets
-Automated machine learning (AutoML) frameworks have become important tools in the data scientists' arsenal, as they dramatically reduce the manual work devoted to the construction of ML pipelines.
-Such frameworks intelligently search among millions of possible configurations of feature engineering steps, model selection and hyper-parameters tuning options, to finally output an optimal pipeline in terms of predictive accuracy. 
 
-However, when the dataset is large, each individual configuration takes longer to execute, therefore the overall AutoML running times become increasingly high.
-In this work we present SubStrat, an AutoML optimization strategy that tackles the data size, rather than configuration space. 
-It wraps existing AutoML tools, and instead of execute them on directly on the entire dataset, SubStrat uses a genetic-based algorithm to find a small yet representative \textit{data subset} which preserves a characteristic of the original one. It then employs the AutoML tool on the small subset, and finally, it refines the resulted pipeline by executing a restricted, much shorter, AutoML process on the large dataset.
+When the dataset is large, AutoML running times become increasingly high. 
+We introduce SubStrat, an AutoML optimization strategy that tackles the data size, rather than configuration space. 
+It wraps existing AutoML tools such as AutoSklearn, TPOT and H2O, and instead of execute them on directly on the entire dataset, SubStrat uses a genetic-based algorithm to find a small yet representative data subset which preserves a characteristic of the original one. It then employs the AutoML tool on the small subset, and finally, it refines the resulted pipeline by executing a restricted, much shorter, AutoML process on the large dataset.
 
-The project aims to answer an instance of the following general task:
-Given a matrix (D := (R, C)) and a fitness function (F) such that D has |R| = M rows and |C| = N columns, 
-and F: D -> |R. In addition, given 0 < m << M and 0 < n << N, the sizes of the subsets of the rows and columns of the original matrix. 
-We wish to find subsets in sizes (m, n) such that:
-S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of the matrix D.
+SubStrat is based on the following paperes:
 
-We used the outcome of this task as part of time and resource optimization process in an autoML context. Namely, we find a data subset of the original dataset, compute autoML using the small matrix and fine-tune the resulted model's hyperparameters using the autoML tool on the entire dataset. 
+- Teddy Lazebnik, Amit Somech, and Abraham Itzhak Weinberg. [SubStrat: A
+Subset-Based Optimization Strategy for Faster AutoML](https://www.vldb.org/pvldb/vol16/p772-somech.pdf). PVLDB, 16(4): 772 -
+780, 2022. doi:10.14778/3574245.3574261
 
-### **NEW SubStrat-Automl pyhont library**
+- Teddy Lazebnik, and Amit Somech. [Demonstrating SubStrat: A Subset-Based Strategy for Faster AutoML on Large Datasets.](https://dl.acm.org/doi/abs/10.1145/3511808.3557160) Proceedings of the 31st ACM International Conference on Information & Knowledge Management. 2022.
+
+# **NEW SubStrat-Automl pyhont package**
 We released SubStrat-automl as a Python Package. Install it via
 ```
 pip install substrat-automl
 ```
-For more instruction and examples, please refer to the new [SubStrat github repository](https://github.com/analysis-bots/SubStrat)
+For more instruction and examples, please refer to the new [SubStrat github repository](https://github.com/analysis-bots/SubStrat) 
 
 
-### Table of Contents
-1. [Usage](#usage)
+### Experiments reproducability - Table of contents
+1. [Usage (paper code)](#usage)
 2. [Data](#data)
-3. [Experiments](#experiments)
+3. [Experiments details](#experiments)
 4. [Algorithm](#algorithm)
 3. [Files structure](#files)
 4. [Dependencies](#dependancies)
 
 <a name="usage"/>
 
-## Usage 
+## Usage (paper code)
 
 1. Clone the repo
 2. Install the '**requirements.txt**' file (pip install requirements.txt)
