@@ -1,4 +1,4 @@
-# SubStrat: Faster AutoML with Measure-Preserving Data Subsets
+# SubStrat: A Subset-Based Optimization Strategy for Faster AutoML
 
 When the dataset is large, AutoML running times become increasingly high. 
 We introduce SubStrat, an AutoML optimization strategy that tackles the data size, rather than configuration space. 
