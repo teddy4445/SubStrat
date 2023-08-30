@@ -12,16 +12,16 @@ Subset-Based Optimization Strategy for Faster AutoML](https://www.vldb.org/pvldb
 
 - Teddy Lazebnik, and Amit Somech. [Demonstrating SubStrat: A Subset-Based Strategy for Faster AutoML on Large Datasets.](https://dl.acm.org/doi/abs/10.1145/3511808.3557160) Proceedings of the 31st ACM International Conference on Information & Knowledge Management. 2022.
 
-# **New [SubStrat-Automl](https://github.com/analysis-bots/SubStrat)  python package**
+## New [SubStrat-Automl](https://github.com/analysis-bots/SubStrat)  python package
 We released SubStrat-automl as a Python Package. Install it via
 ```
 pip install substrat-automl
 ```
 For more instruction and examples, please refer to the new [SubStrat github repository](https://github.com/analysis-bots/SubStrat) 
 
-<br>
-<br>
-<br>
+</br>
+</br>
+</br>
 
 
 ### Experiments reproducability - Table of contents
