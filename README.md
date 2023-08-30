@@ -1,5 +1,5 @@
 # SubStrat: Faster AutoML with Measure-Preserving Data Subsets
-Automated machine learning (AutoML) frameworks have become important  tools in the data scientists' arsenal, as they dramatically reduce the manual work devoted to the construction of ML pipelines.
+Automated machine learning (AutoML) frameworks have become important tools in the data scientists' arsenal, as they dramatically reduce the manual work devoted to the construction of ML pipelines.
 Such frameworks intelligently search among millions of possible configurations of feature engineering steps, model selection and hyper-parameters tuning options, to finally output an optimal pipeline in terms of predictive accuracy. 
 
 However, when the dataset is large, each individual configuration takes longer to execute, therefore the overall AutoML running times become increasingly high.
@@ -13,6 +13,14 @@ We wish to find subsets in sizes (m, n) such that:
 S = min_{r, c} F(r, c). The resulted matrix 'S' is defined to be the summary of the matrix D.
 
 We used the outcome of this task as part of time and resource optimization process in an autoML context. Namely, we find a data subset of the original dataset, compute autoML using the small matrix and fine-tune the resulted model's hyperparameters using the autoML tool on the entire dataset. 
+
+### **NEW SubStrat-Automl pyhont library**
+We released SubStrat-automl as a Python Package. Install it via
+```
+pip install substrat-automl
+```
+For more instruction and examples, please refer to the new [SubStrat github repository](https://github.com/analysis-bots/SubStrat)
+
 
 ### Table of Contents
 1. [Usage](#usage)
